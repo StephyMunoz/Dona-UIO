@@ -18,6 +18,8 @@ target 'newDonaUio' do
 
   pod 'RNCAsyncStorage', :path => '../node_modules/@react-native-community/async-storage'
 
+  pod 'react-native-maps', :path => '../node_modules/react-native-maps'
+
   target 'newDonaUioTests' do
     inherit! :complete
     # Pods for testing

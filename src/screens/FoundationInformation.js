@@ -1,9 +1,17 @@
 import React, {useEffect, useState} from 'react';
-import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
-import {Avatar} from 'react-native-elements';
+import {Avatar, ListItem, Icon} from 'react-native-elements';
 import {db} from '../firebase';
 import Loading from '../components/Loading';
+import Map from '../components/Map';
+import {map} from 'lodash';
 
 const FoundationInformation = props => {
   const {navigation, route} = props;
@@ -38,43 +46,95 @@ const FoundationInformation = props => {
   }
 
   return (
-    <View style={styles.viewBody}>
-      <View style={styles.viewCampaignTitle}>
-        <Avatar
-          source={{uri: image}}
-          rounded
-          containerStyle={styles.avatar}
-          size={100}
-        />
-        <View>
-          <Text style={styles.foundation}>{name}</Text>
-          <Text style={styles.descriptionCampaign}>{email}</Text>
+    <ScrollView>
+      <View style={styles.viewBody}>
+        <View style={styles.viewCampaignTitle}>
+          <Avatar
+            source={{uri: image}}
+            rounded
+            containerStyle={styles.avatar}
+            size={100}
+          />
+          <View>
+            <Text style={styles.foundation}>{name}</Text>
+            <Text style={styles.descriptionCampaign}>{email}</Text>
+          </View>
         </View>
-      </View>
-      {foundation ? (
-        <View>
-          <Text style={styles.viewDescription}>{foundation.description}</Text>
-        </View>
-      ) : (
-        <Loading isVisible={true} text="Cargando, espere" />
-      )}
-      {foundationPhone.length !== 0 && (
-        <View>
-          <Text style={styles.contactTitle}>Números de contacto</Text>
-          {foundationPhone.map((phone, index) => (
-            <View key={index}>
-              <Text style={styles.contactList}>{phone}</Text>
-            </View>
-          ))}
-        </View>
-      )}
+        {foundation ? (
+          <View>
+            <Text style={styles.viewDescription}>{foundation.description}</Text>
+          </View>
+        ) : (
+          <Loading isVisible={true} text="Cargando, espere" />
+        )}
+        {foundation.location && (
+          <View>
+            <Text style={styles.contactTitle}>Ubicación de la fundación</Text>
+            <FoundationLocation
+              location={foundation.location}
+              name={foundation.displayName}
+              address={foundation.address}
+              email={foundation.email}
+            />
+          </View>
+        )}
+        {foundationPhone.length !== 0 && (
+          <View>
+            <Text style={styles.contactTitle}>Teléfonos de contacto</Text>
+            {map(foundationPhone, (item, index) => (
+              <ListItem key={index} containerStyle={styles.containerListItem}>
+                <Icon name="phone" type="material-community" color="#00a680" />
+                <ListItem.Content>
+                  <ListItem.Title>{item}</ListItem.Title>
+                </ListItem.Content>
+              </ListItem>
+            ))}
+          </View>
+        )}
 
-      {/*<Text style={styles.contactTitle}>Dirección</Text>*/}
-    </View>
+        {/*<Text style={styles.contactTitle}>Dirección</Text>*/}
+      </View>
+    </ScrollView>
   );
 };
 
 export default FoundationInformation;
+
+function FoundationLocation(props) {
+  const {location, name, address, email} = props;
+
+  console.log(props);
+
+  const listInfo = [
+    {
+      text: address,
+      iconName: 'map-marker',
+      iconType: 'material-community',
+      action: null,
+    },
+    {
+      text: email,
+      iconName: 'at',
+      iconType: 'material-community',
+      action: null,
+    },
+  ];
+
+  return (
+    <View style={styles.viewFoundationInfo}>
+      <Map location={location} name={name} height={200} />
+
+      {map(listInfo, (item, index) => (
+        <ListItem key={index} containerStyle={styles.containerListItem}>
+          <Icon name={item.iconName} type={item.iconType} color="#00a680" />
+          <ListItem.Content>
+            <ListItem.Title>{item.text}</ListItem.Title>
+          </ListItem.Content>
+        </ListItem>
+      ))}
+    </View>
+  );
+}
 
 const styles = StyleSheet.create({
   viewBody: {
@@ -98,6 +158,10 @@ const styles = StyleSheet.create({
   viewCampaignInfo: {
     margin: 15,
     marginTop: 25,
+  },
+  viewFoundationInfo: {
+    margin: 15,
+    marginTop: 20,
   },
   viewFavorite: {
     position: 'absolute',
@@ -134,5 +198,9 @@ const styles = StyleSheet.create({
     fontSize: 18,
     marginLeft: 15,
     marginBottom: 10,
+  },
+  containerListItem: {
+    borderBottomColor: '#d8d8d8',
+    borderBottomWidth: 1,
   },
 });

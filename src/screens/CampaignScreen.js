@@ -41,7 +41,7 @@ const CampaignScreen = props => {
         });
       });
       return () => {
-        db.ref(`campaigns`).off();
+        db.ref('campaigns').off();
       };
     }, [id]),
   );
@@ -75,8 +75,6 @@ const CampaignScreen = props => {
   }, [campaignSelected]);
 
   if (!campaignSelected) return <Loading isVisible={true} text="Cargando..." />;
-
-  console.log('nhd', campaignSelected.createdBy);
 
   if (campaignOwnerAvatar) {
     console.log(campaignOwnerAvatar);

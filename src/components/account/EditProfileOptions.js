@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {Alert, ScrollView, StyleSheet, Text, View} from 'react-native';
 import avatarImage from '../../images/character_icons_7.png';
 import {Avatar, Button, Icon, Input, ListItem} from 'react-native-elements';
@@ -7,7 +7,7 @@ import Modal from '../Modal';
 import ChangeDisplayNameForm from './ChangeDisplayNameForm';
 import * as yup from 'yup';
 import {auth, db, storage} from '../../firebase';
-import {Formik} from 'formik';
+import Toast from 'react-native-easy-toast';
 import ChangeEmailForm from './ChangeEmailForm';
 import ChangePasswordForm from './ChangePasswordForm';
 import ContactForm from './ContactForm';
@@ -41,6 +41,7 @@ const ProfileOptions = () => {
 
   const {user, logout} = useAuth();
   const navigation = useNavigation();
+  const toastRef = useRef();
 
   useEffect(() => {
     (async () => {
@@ -179,7 +180,7 @@ const ProfileOptions = () => {
           source={
             auth.currentUser.photoURL
               ? {uri: auth.currentUser.photoURL}
-              : avatarImage
+              : avatarDefault
           }
         />
         <View style={styles.textStyle}>
@@ -373,102 +374,27 @@ const ProfileOptions = () => {
           onPress={() => {
             setExpandedLocation(!expandedLocation);
           }}>
-          <ListItem
-            key={1}
-            onPress={showModalLocation}
-            bottomDivider
-            topDivider>
+          <ListItem key={1} onPress={showLocation} bottomDivider topDivider>
             <ListItem.Content>
-              <AddLocation
-                isVisible={showModalContact}
-                setIsVisible={setShowModalContact}
-              />
+              <ListItem.Title>
+                Dirección y ubicación de la fundación
+              </ListItem.Title>
             </ListItem.Content>
             <Icon name="edit" type="material-icons" />
-            {/*<AddLocation*/}
-            {/*  isVisible={showModalContact}*/}
-            {/*  setIsVisible={setShowModalContact}*/}
-            {/*/>*/}
+            <AddLocation
+              isVisible={showModalLocation}
+              setIsVisible={setShowModalLocation}
+              toastRef={toastRef}
+            />
           </ListItem>
         </ListItem.Accordion>
       </View>
+      <Toast ref={toastRef} position="center" opacity={0.9} />
     </ScrollView>
   );
 };
 
 export default ProfileOptions;
-
-function Map(props) {
-  const {isVisibleMap, setIsVisibleMap, setLocationRestaurant, toastRef} =
-    props;
-  const [location, setLocation] = useState(null);
-
-  useEffect(() => {
-    (async () => {
-      const resultPermissions = await Permissions.askAsync(
-        Permissions.LOCATION,
-      );
-      const statusPermissions = resultPermissions.permissions.location.status;
-
-      if (statusPermissions !== 'granted') {
-        // toastRef.current.show(
-        //   'Tienes que aceptar los permisos de localizacion para crear un restaurante',
-        //   3000,
-        // );
-      } else {
-        const loc = await Location.getCurrentPositionAsync({});
-        setLocation({
-          latitude: loc.coords.latitude,
-          longitude: loc.coords.longitude,
-          latitudeDelta: 0.001,
-          longitudeDelta: 0.001,
-        });
-      }
-    })();
-  }, []);
-
-  const confirmLocation = () => {
-    setLocationRestaurant(location);
-    toastRef.current.show('Localizacion guardada correctamente');
-    setIsVisibleMap(false);
-  };
-
-  return (
-    <Modal isVisible={isVisibleMap} setIsVisible={setIsVisibleMap}>
-      <View>
-        {location && (
-          <MapView
-            style={styles.mapStyle}
-            initialRegion={location}
-            showsUserLocation={true}
-            onRegionChange={region => setLocation(region)}>
-            <MapView.Marker
-              coordinate={{
-                latitude: location.latitude,
-                longitude: location.longitude,
-              }}
-              draggable
-            />
-          </MapView>
-        )}
-        <View style={styles.viewMapBtn}>
-          <Button
-            title="Guardar Ubicacion"
-            containerStyle={styles.viewMapBtnContainerSave}
-            buttonStyle={styles.viewMapBtnSave}
-            onPress={confirmLocation}
-          />
-          <Button
-            title="Cancelar Ubicacion"
-            containerStyle={styles.viewMapBtnContainerCancel}
-            buttonStyle={styles.viewMapBtnCancel}
-            onPress={() => setIsVisibleMap(false)}
-          />
-        </View>
-      </View>
-    </Modal>
-  );
-}
 
 const styles = StyleSheet.create({
   viewUserInfo: {

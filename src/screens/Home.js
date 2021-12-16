@@ -1,4 +1,4 @@
-import React, {useCallback, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {View, Text, StyleSheet} from 'react-native';
 import Toast from 'react-native-easy-toast';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
@@ -10,7 +10,6 @@ import ListFoundationRequirements from '../components/ListFoundationRequirements
 const Home = () => {
   const navigation = useNavigation();
   const [foundationNeeds, setFoundationNeeds] = useState([]);
-  const [foundationRole, setFoundationRole] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
   useFocusEffect(
@@ -25,14 +24,6 @@ const Home = () => {
           });
           setFoundationNeeds(resultFoundationNeeds);
         });
-
-        if (foundationNeeds) {
-          await db
-            .ref(`users/${foundationNeeds.createdBy}`)
-            .on('value', snapshot => {
-              console.log('suse', snapshot.val());
-            });
-        }
       };
 
       getRequirements();
@@ -42,9 +33,6 @@ const Home = () => {
     }, []),
   );
 
-  if (foundationNeeds) {
-    console.log('foundationNeeds', foundationNeeds);
-  }
   return (
     <View style={styles.viewBody}>
       <Text style={styles.textStyle}>
@@ -87,6 +75,6 @@ const styles = StyleSheet.create({
   viewBody: {
     flex: 1,
     backgroundColor: '#fff',
-    paddingBottom: 50,
+    paddingBottom: 20,
   },
 });

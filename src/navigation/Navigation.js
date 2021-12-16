@@ -14,6 +14,8 @@ import AnimalNeedsStack from './AnimalNeedsStack';
 import AnimalCareCampaignsStack from './AnimalCareCampaignsStack';
 import HumanitarianHelpStack from './HumanitarianHelpStack';
 import CampaignsStack from './CampaignsStack';
+import FoundationsStack from './FoundationsStack';
+import FavoritesStack from './FavoritesStack';
 
 const Tab = createBottomTabNavigator();
 
@@ -33,8 +35,8 @@ const Navigation = () => {
             headerShown: false,
           })}>
           <Tab.Screen
-            name="home"
-            component={Home}
+            name="foundations_needs"
+            component={FoundationsStack}
             options={{title: 'Inicio'}}
           />
           <Tab.Screen
@@ -66,8 +68,8 @@ const Navigation = () => {
             headerShown: false,
           })}>
           <Tab.Screen
-            name="home"
-            component={Home}
+            name="foundations_needs"
+            component={FoundationsStack}
             options={{title: 'Inicio'}}
           />
           <Tab.Screen
@@ -81,8 +83,8 @@ const Navigation = () => {
             options={{title: 'Campañas'}}
           />
           <Tab.Screen
-            name="favorites"
-            component={Favorites}
+            name="favorites_stack"
+            component={FavoritesStack}
             options={{title: 'Favoritos'}}
           />
           <Tab.Screen
@@ -104,8 +106,8 @@ const Navigation = () => {
             headerShown: false,
           })}>
           <Tab.Screen
-            name="home"
-            component={Home}
+            name="foundations_needs"
+            component={FoundationsStack}
             options={{title: 'Inicio'}}
           />
 
@@ -139,8 +141,8 @@ const Navigation = () => {
             headerShown: false,
           })}>
           <Tab.Screen
-            name="home"
-            component={Home}
+            name="foundations_needs"
+            component={FoundationsStack}
             options={{title: 'Inicio'}}
           />
           <Tab.Screen
@@ -166,6 +168,9 @@ function screenOptions(route, color) {
   let iconName;
 
   switch (route.name) {
+    case 'foundations_needs':
+      iconName = 'home';
+      break;
     case 'home':
       iconName = 'home';
       break;
@@ -178,7 +183,7 @@ function screenOptions(route, color) {
     case 'profile':
       iconName = 'account-outline';
       break;
-    case 'favorites':
+    case 'favorites_stack':
       iconName = 'heart-outline';
       break;
     case 'animal-campaigns':

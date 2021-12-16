@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {
   StyleSheet,
   Text,
@@ -10,10 +10,11 @@ import {
 } from 'react-native';
 import {Avatar, Image as ImageElements} from 'react-native-elements';
 import {size} from 'lodash';
-import {useNavigation} from '@react-navigation/native';
+import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import imageNotFound from '../images/no-image.png';
 import {Divider} from 'react-native-elements/dist/divider/Divider';
 import Loading from '../components/Loading';
+import {db} from '../firebase';
 
 const ListFoundationRequirements = ({foundationsNeeds, isLoading}) => {
   const navigation = useNavigation();
@@ -23,7 +24,9 @@ const ListFoundationRequirements = ({foundationsNeeds, isLoading}) => {
       {size(foundationsNeeds) > 0 ? (
         <FlatList
           data={foundationsNeeds}
-          renderItem={need => <FoundationNeed foundationNeed={need} />}
+          renderItem={need => (
+            <FoundationNeed foundationNeed={need} navigation={navigation} />
+          )}
           keyExtractor={(item, index) => index.toString()}
           onEndReachedThreshold={0.5}
           // onEndReached={handleLoadMore}
@@ -40,49 +43,59 @@ const ListFoundationRequirements = ({foundationsNeeds, isLoading}) => {
   );
 };
 
-function FoundationNeed({foundationNeed}) {
-  const {id, images, food, personal_care, other, title, medicine, role} =
+function FoundationNeed({foundationNeed, navigation}) {
+  const {images, food, personal_care, other, title, medicine, createdBy} =
     foundationNeed.item;
-  const imagenNeed = images ? images[0] : null;
+  const imageNeed = images ? images[0] : null;
+  const [foundationSelected, setFoundationSelected] = useState(null);
 
-  // console.log('images', images);
+  useEffect(() => {
+    db.ref(`users/${createdBy}`).on('value', snapshot => {
+      setFoundationSelected(snapshot.val());
+    });
+    return () => {
+      db.ref(`users/${createdBy}`).off();
+    };
+  }, [createdBy]);
 
   const goFoundationNeed = () => {
-    console.log('image  Selected', images[0]);
-
-    // navigation.navigate('humanitarianNeed', {
-    //   id,
-    //   name,
-    // });
+    navigation.navigate('foundation_need', {
+      foundationSelected,
+      foundationNeed,
+    });
   };
 
   return (
-    <TouchableOpacity onPress={goFoundationNeed}>
-      <View style={styles.viewHumanitarianNeed}>
+    <View style={styles.viewHumanitarianNeed}>
+      <TouchableOpacity onPress={goFoundationNeed}>
         <Text style={styles.title}>{title}</Text>
-        <ImageElements
-          resizeMode="cover"
-          PlaceholderContent={<ActivityIndicator color="fff" />}
-          source={imagenNeed ? {uri: imagenNeed} : imageNotFound}
-          style={styles.imageHumanitarianNeed}
-        />
-        {food !== '' && role === 'humanitarian_help' ? (
-          <View>
-            <Text style={styles.requirements}>
-              Requerimientos alimenticios:{' '}
-            </Text>
-            <Text style={styles.requirementsText}>{food}</Text>
-          </View>
-        ) : (
-          <View>
-            <Text style={styles.requirements}>
-              Requerimientos de comida balanceada:{' '}
-            </Text>
-            <Text style={styles.requirementsText}>{food}</Text>
-          </View>
-        )}
+      </TouchableOpacity>
+      <ImageElements
+        resizeMode="cover"
+        PlaceholderContent={<ActivityIndicator color="fff" />}
+        source={imageNeed ? {uri: imageNeed} : imageNotFound}
+        style={styles.imageHumanitarianNeed}
+      />
 
-        {personal_care !== '' && (
+      {foundationSelected &&
+      food !== '' &&
+      foundationSelected.role === 'humanitarian_help' ? (
+        <View>
+          <Text style={styles.requirements}>Requerimientos alimenticios: </Text>
+          <Text style={styles.requirementsText}>{food}</Text>
+        </View>
+      ) : (
+        <View>
+          <Text style={styles.requirements}>
+            Requerimientos de comida balanceada:{' '}
+          </Text>
+          <Text style={styles.requirementsText}>{food}</Text>
+        </View>
+      )}
+
+      {foundationSelected &&
+        foundationSelected.role === 'humanitarian_help' &&
+        personal_care !== '' && (
           <View>
             <Text style={styles.requirements}>
               Implementos de aseo personal:{' '}
@@ -90,7 +103,9 @@ function FoundationNeed({foundationNeed}) {
             <Text style={styles.requirementsText}>{personal_care}</Text>
           </View>
         )}
-        {medicine !== '' && (
+      {foundationSelected &&
+        foundationSelected.role === 'animal_help' &&
+        medicine !== '' && (
           <View>
             <Text style={styles.requirements}>
               Medicina requerida en la fundación:{' '}
@@ -98,15 +113,14 @@ function FoundationNeed({foundationNeed}) {
             <Text style={styles.requirementsText}>{medicine}</Text>
           </View>
         )}
-        {other !== '' && (
-          <View>
-            <Text style={styles.requirements}>Comentarios: </Text>
-            <Text style={styles.requirementsText}>{other}</Text>
-          </View>
-        )}
-        <Divider />
-      </View>
-    </TouchableOpacity>
+      {other !== '' && (
+        <View>
+          <Text style={styles.requirements}>Comentarios: </Text>
+          <Text style={styles.requirementsText}>{other}</Text>
+        </View>
+      )}
+      <Divider />
+    </View>
   );
 }
 
