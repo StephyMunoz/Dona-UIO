@@ -1,5 +1,12 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {Alert, ScrollView, StyleSheet, Text, View} from 'react-native';
+import {
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import avatarImage from '../../images/character_icons_7.png';
 import {Avatar, Button, Icon, Input, ListItem} from 'react-native-elements';
 import {useAuth} from '../../lib/auth';
@@ -15,10 +22,8 @@ import avatarDefault from '../../images/avatar-default.jpg';
 import {launchImageLibrary} from 'react-native-image-picker';
 import AddDescriptionForm from './AddDescriptionForm';
 import {useNavigation} from '@react-navigation/native';
-import * as Permissions from 'react-native-permissions';
-import * as Location from 'react-native-location';
-import MapView from 'react-native-maps';
 import AddLocation from './AddLocation';
+import Loading from '../Loading';
 
 const ProfileOptions = () => {
   const [showModalDescription, setShowModalDescription] = useState(false);
@@ -30,6 +35,7 @@ const ProfileOptions = () => {
   const [expandedLocation, setExpandedLocation] = useState(false);
   const [description, setDescription] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [textLoading, setTextLoading] = useState(null);
   const [error, setError] = useState(null);
   const [change, setChange] = useState(false);
   const [changeLogout, setChangeLogout] = useState(false);
@@ -85,24 +91,22 @@ const ProfileOptions = () => {
   const changeAvatar = async () => {
     await launchImageLibrary(options, response => {
       if (response.didCancel) {
-        console.log('User cancelled image picker');
+        toastRef.current.show('Selección de imágenes cancelada');
       } else if (response.errorCode) {
-        console.log('ImagePicker Error: ', response.errorCode);
+        toastRef.current.show('Error al subir al imagen, intente más tarde');
       } else {
-        console.log('response', response.assets[0].uri);
         uploadImage(response.assets[0].uri)
           .then(() => {
             updatePhotoUrl();
           })
           .catch(() => {
-            // toastRef.current.show('Error al actualizar el avatar.');
-            console.log('Error al actualizar el avatar');
+            toastRef.current.show('Error al actualizar el avatar.');
           });
       }
     });
   };
   const uploadImage = async uri => {
-    // setLoadingText('Actualizando Avatar');
+    setTextLoading('Actualizando Avatar');
     setLoading(true);
 
     const response = await fetch(uri);
@@ -123,8 +127,8 @@ const ProfileOptions = () => {
         setLoading(false);
       })
       .catch(() => {
-        // toastRef.current.show('Error al actualizar el avatar.');
-        console.log('Error al actualizar el avatar');
+        toastRef.current.show('Error al actualizar el avatar.');
+        // console.log('Error al actualizar el avatar');
       });
   };
 
@@ -171,18 +175,20 @@ const ProfileOptions = () => {
   return (
     <ScrollView>
       <View style={styles.viewUserInfo}>
-        <Avatar
-          rounded
-          showEditButton={true}
-          onPress={changeAvatar}
-          size="xlarge"
-          containerStyle={styles.userInfoAvatar}
-          source={
-            auth.currentUser.photoURL
-              ? {uri: auth.currentUser.photoURL}
-              : avatarDefault
-          }
-        />
+        <TouchableOpacity onPress={changeAvatar}>
+          <Avatar
+            rounded
+            size="xlarge"
+            icon={{name: 'adb', type: 'material', onPress: {changeAvatar}}}
+            containerStyle={styles.userInfoAvatar}
+            source={
+              auth.currentUser.photoURL
+                ? {uri: auth.currentUser.photoURL}
+                : avatarDefault
+            }>
+            <Avatar.Accessory size={35} />
+          </Avatar>
+        </TouchableOpacity>
         <View style={styles.textStyle}>
           <Text style={styles.displayName}>
             {auth.currentUser.displayName
@@ -390,6 +396,7 @@ const ProfileOptions = () => {
         </ListItem.Accordion>
       </View>
       <Toast ref={toastRef} position="center" opacity={0.9} />
+      <Loading isVisible={loading} text={textLoading} />
     </ScrollView>
   );
 };

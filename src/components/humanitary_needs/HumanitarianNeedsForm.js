@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useRef, useState} from 'react';
 import {
   Alert,
   Image,
@@ -28,13 +28,15 @@ import {Dropdown} from 'react-native-material-dropdown';
 import Loading from '../Loading';
 import uuid from 'random-uuid-v4';
 import {useNavigation} from '@react-navigation/native';
+import Toast from 'react-native-easy-toast';
 
 const HumanitarianNeedsForm = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [imagesSelected, setImagesSelected] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [loadingText, setLoadingText] = useState(false);
   const {user} = useAuth();
+  const toastRef = useRef();
   const navigation = useNavigation();
 
   const schema = yup.object().shape({
@@ -54,37 +56,38 @@ const HumanitarianNeedsForm = () => {
   };
 
   const onFinish = async data => {
-    console.log('data', data);
     if (size(imagesSelected) === 0) {
-      setIsLoading(false);
-      console.log('Seleccione una imagen para poder continuar');
+      setLoading(false);
+      toastRef.current.show('Seleccione una imagen para poder continuar');
     } else {
-      setIsLoading(true);
+      setLoading(true);
       setError(null);
       try {
-        setIsLoading(true);
+        setLoading(true);
+        setLoadingText('Guardando información');
         await uploadImageStorage().then(response => {
           db.ref('foundations')
             .push()
             .set({
-              createdAt: new Date(),
+              createdAt: new Date().getTime(),
               title: data.title,
               food: data.food,
               personal_care: data.personal_care,
               other: data.other,
               images: response,
               createdBy: user.uid,
+              id: uuid(),
             })
             .then(() => {
-              setIsLoading(false);
+              setLoading(false);
               navigation.navigate('humanitarian_needs');
             })
             .catch(e => {
-              setIsLoading(false);
+              setLoading(false);
               console.log('e', e);
-              // toastRef.current.show(
-              //   'Error al subir el restaurante, intentelo más tarde',
-              // );
+              toastRef.current.show(
+                'Error al subir la información, intentelo más tarde',
+              );
             });
         });
       } catch (e) {
@@ -289,12 +292,14 @@ const HumanitarianNeedsForm = () => {
                 title="Ingresar requerimiento"
                 // disabled={!isValid}
                 containerStyle={styles.btnContainerLogin}
-                loading={isLoading}
+                // loading={isLoading}
               />
             </>
           )}
         </Formik>
       </View>
+      <Toast ref={toastRef} position="center" opacity={0.9} />
+      <Loading isVisible={loading} text={loadingText} />
     </ScrollView>
   );
 };

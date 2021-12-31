@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   StyleSheet,
   Text,
@@ -8,14 +8,26 @@ import {
   TouchableOpacity,
   Image,
   ScrollView,
+  Dimensions,
 } from 'react-native';
-import {Avatar, Image as ImageElements} from 'react-native-elements';
+import {
+  Avatar,
+  Divider,
+  Icon,
+  Image as ImageElements,
+} from 'react-native-elements';
 import {size} from 'lodash';
 import {useNavigation} from '@react-navigation/native';
 import imageNotFound from '../images/no-image.png';
+import Carousel from '../components/Carousel';
+import {db, storage} from '../firebase';
+import {useAuth} from '../lib/auth';
+import Loading from './Loading';
 // import {Divider} from 'react-native-elements/dist/divider/Divider';
 
-const ListCampaignsUser = ({animalCampaigns, isLoading}) => {
+const screenWidth = Dimensions.get('window').width;
+
+const ListCampaignsUser = ({animalCampaigns, isLoading, toastRef}) => {
   const navigation = useNavigation();
 
   return (
@@ -24,7 +36,11 @@ const ListCampaignsUser = ({animalCampaigns, isLoading}) => {
         <FlatList
           data={animalCampaigns}
           renderItem={campaign => (
-            <AnimalCampaign animalCampaign={campaign} navigation={navigation} />
+            <AnimalCampaign
+              animalCampaign={campaign}
+              navigation={navigation}
+              toastRef={toastRef}
+            />
           )}
           keyExtractor={(item, index) => index.toString()}
           onEndReachedThreshold={0.5}
@@ -41,9 +57,12 @@ const ListCampaignsUser = ({animalCampaigns, isLoading}) => {
   );
 };
 
-function AnimalCampaign({animalCampaign, navigation}) {
-  const {id, images, campaignDescription, other, title} = animalCampaign.item;
-
+function AnimalCampaign({animalCampaign, navigation, toastRef}) {
+  const {id, images, campaignDescription, other, title, createdBy} =
+    animalCampaign.item;
+  const [foundation, setFoundation] = useState(null);
+  const [avatar, setAvatar] = useState(null);
+  const {user} = useAuth();
   // console.log(animalCampaign);
 
   const goAnimalCampaign = () => {
@@ -53,23 +72,72 @@ function AnimalCampaign({animalCampaign, navigation}) {
     });
   };
 
+  useEffect(() => {
+    db.ref(`users/${createdBy}`).on('value', snapshot => {
+      setFoundation(snapshot.val());
+    });
+    storage
+      .ref()
+      .child(`avatar/${createdBy}`)
+      .getDownloadURL()
+      .then(async response => {
+        setAvatar(response);
+      })
+      .catch(() => {
+        console.log('Error al descargar avatar');
+      });
+
+    // db.ref(`users/${foundationNeed.item.createdBy}`).on('value', snapshot => {
+    //   setInfoFoundation(snapshot.val());
+    // });
+    return () => {
+      db.ref(`users/${createdBy}`).off();
+    };
+  }, [createdBy]);
+
+  if (!foundation || !avatar) {
+    return <Loading isVisible={true} text="Cargando información" />;
+  }
+
+  const handleNavigation = () => {
+    navigation.navigate('foundation_screen', {
+      name: foundation.displayName,
+      image: avatar,
+      id: foundation.uid,
+      email: foundation.email,
+    });
+  };
+
   return (
     <View style={styles.viewAnimalCampaign}>
+      <View style={{flexDirection: 'row'}}>
+        <Avatar
+          source={{uri: avatar}}
+          rounded
+          containerStyle={styles.avatar}
+          size="medium"
+        />
+        <TouchableOpacity onPress={handleNavigation}>
+          <View>
+            <Text style={styles.foundation}>{foundation.displayName}</Text>
+            <Text style={styles.descriptionCampaign}>{foundation.email}</Text>
+          </View>
+        </TouchableOpacity>
+        {user.role === 'administrator' && (
+          <Icon
+            name="trash-can-outline"
+            type="material-community"
+            containerStyle={styles.iconTrash}
+            size={35}
+            // onPress={handleDelete}
+          />
+        )}
+      </View>
+
+      <Carousel arrayImages={images} height={200} width={screenWidth} />
       <TouchableOpacity onPress={goAnimalCampaign}>
         <Text style={styles.title}>{title}</Text>
       </TouchableOpacity>
-      <ScrollView horizontal>
-        {images &&
-          images.map((image, index) => (
-            <ImageElements
-              resizeMode="cover"
-              PlaceholderContent={<ActivityIndicator color="fff" />}
-              source={image ? {uri: image} : imageNotFound}
-              style={styles.imageAnimalCampaign}
-              key={index}
-            />
-          ))}
-      </ScrollView>
       <View>
         <Text style={styles.requirements}>Descripción: </Text>
         <Text style={styles.requirementsText}>{campaignDescription}</Text>
@@ -80,7 +148,7 @@ function AnimalCampaign({animalCampaign, navigation}) {
           <Text style={styles.requirementsText}>{other}</Text>
         </View>
       )}
-      {/*<Divider />*/}
+      <Divider style={styles.divider} />
     </View>
   );
 }
@@ -109,18 +177,15 @@ const styles = StyleSheet.create({
   loaderAnimalCampaigns: {
     marginTop: 10,
     marginBottom: 10,
-    alignItems: 'center',
   },
-  viewAnimalCampaign: {
-    // flexDirection: 'row',
-    alignItems: 'center',
-    margin: 10,
-  },
+  viewAnimalCampaign: {},
   title: {
-    fontSize: 18,
+    fontSize: 20,
     color: '#000',
-    textAlign: 'center',
+    // textAlign: 'center',
     marginBottom: 10,
+    fontWeight: 'bold',
+    margin: 20,
   },
   viewAnimalCampaignImage: {
     marginRight: 15,
@@ -132,17 +197,44 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   requirements: {
-    fontSize: 15,
+    fontSize: 20,
     fontWeight: 'bold',
     textAlign: 'justify',
+    marginLeft: 20,
+    marginTop: 10,
   },
   requirementsText: {
-    fontSize: 15,
+    fontSize: 18,
     textAlign: 'justify',
+    marginLeft: 20,
   },
   notFoundAnimalCampaigns: {
     marginTop: 10,
     marginBottom: 20,
     alignItems: 'center',
+  },
+  avatar: {
+    marginRight: 20,
+    marginLeft: 10,
+    marginBottom: 10,
+  },
+  foundation: {
+    color: '#000',
+    fontWeight: 'bold',
+    fontSize: 20,
+  },
+  divider: {
+    height: 5,
+    marginTop: 10,
+    marginBottom: 30,
+    color: '#000',
+  },
+  iconTrash: {
+    position: 'absolute',
+    right: 10,
+  },
+  descriptionCampaign: {
+    marginTop: 5,
+    color: 'grey',
   },
 });

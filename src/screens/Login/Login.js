@@ -59,6 +59,7 @@ const Login = () => {
   if (user === null) {
     setLoading(true);
     setLoadingText('Verificando sesión');
+    return <Loading isVisible={true} text="Verificando sesión" />;
   }
 
   return (

@@ -1,5 +1,6 @@
-import React, {useCallback, useState} from 'react';
+import React, {useCallback, useRef, useState} from 'react';
 import {View, ScrollView, StyleSheet, Text} from 'react-native';
+import Toast from 'react-native-easy-toast';
 import {useFocusEffect} from '@react-navigation/native';
 import {useNavigation} from '@react-navigation/native';
 import {Icon} from 'react-native-elements';
@@ -13,20 +14,23 @@ const AnimalNeeds = () => {
   const [startNeeds, setStartNeeds] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const limitNeeds = 5;
+  const toastRef = useRef();
 
   useFocusEffect(
     useCallback(() => {
       const resultAnimalNeeds = [];
 
-      db.ref('foundations').on('value', snapshot => {
-        snapshot.forEach(need => {
-          const q = need.val();
-          if (q.createdBy === auth.currentUser.uid) {
-            resultAnimalNeeds.push(q);
-          }
+      db.ref('foundations')
+        .orderByChild('createdAt')
+        .on('value', snapshot => {
+          snapshot.forEach(need => {
+            const q = need.val();
+            if (q.createdBy === auth.currentUser.uid) {
+              resultAnimalNeeds.push(q);
+            }
+          });
+          setAnimalNeeds(resultAnimalNeeds.reverse());
         });
-        setAnimalNeeds(resultAnimalNeeds);
-      });
 
       // db.ref(`animal_needs/${auth.currentUser.uid}`)
       //   // .orderBy('createAt', 'desc')
@@ -86,6 +90,7 @@ const AnimalNeeds = () => {
           animalNeeds={animalNeeds}
           // handleLoadMore={handleLoadMore}
           isLoading={isLoading}
+          toastRef={toastRef}
         />
       )}
 
@@ -97,6 +102,7 @@ const AnimalNeeds = () => {
         containerStyle={styles.btnContainer}
         onPress={() => navigation.navigate('form_animal_needs')}
       />
+      <Toast ref={toastRef} position="center" opacity={0.9} />
     </View>
   );
 };

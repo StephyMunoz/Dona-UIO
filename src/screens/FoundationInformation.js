@@ -12,12 +12,18 @@ import {db} from '../firebase';
 import Loading from '../components/Loading';
 import Map from '../components/Map';
 import {map} from 'lodash';
+import {useAuth} from '../lib/auth';
+import ChangeDisplayNameForm from '../components/account/ChangeDisplayNameForm';
+import ChangeEmailForm from '../components/account/ChangeEmailForm';
 
 const FoundationInformation = props => {
   const {navigation, route} = props;
   const {id, name, image, email} = route.params;
+  const {user} = useAuth();
   const [foundationPhone, setFoundationPhone] = useState([]);
   const [foundation, setFoundation] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [showModalEmail, setShowModalEmail] = useState(false);
 
   useEffect(() => {
     navigation.setOptions({title: name});
@@ -44,20 +50,72 @@ const FoundationInformation = props => {
   if (!foundation || !foundationPhone) {
     return <Loading setVisible={true} text="Cargando información" />;
   }
+  const openModal = () => {
+    setShowModal(!showModal);
+  };
+  const openModalEmail = () => {
+    setShowModalEmail(!showModalEmail);
+  };
+  const changeAvatar = () => {
+    setShowModalEmail(!showModalEmail);
+  };
 
   return (
     <ScrollView>
       <View style={styles.viewBody}>
         <View style={styles.viewCampaignTitle}>
-          <Avatar
-            source={{uri: image}}
-            rounded
-            containerStyle={styles.avatar}
-            size={100}
-          />
+          {user && user.role === 'administrator' ? (
+            <Avatar
+              size={100}
+              rounded
+              containerStyle={styles.avatar}
+              source={{uri: image}}
+              onPress={changeAvatar}
+              // containerStyle={{backgroundColor: 'grey'}}
+            >
+              <Avatar.Accessory size={23} />
+            </Avatar>
+          ) : (
+            <Avatar
+              source={{uri: image}}
+              rounded
+              containerStyle={styles.avatar}
+              size={100}
+              icon={{name: 'adb', type: 'material'}}
+            />
+          )}
+
           <View>
-            <Text style={styles.foundation}>{name}</Text>
-            <Text style={styles.descriptionCampaign}>{email}</Text>
+            {user && user.role === 'administrator' ? (
+              <View style={{flexDirection: 'row'}}>
+                <Text style={styles.foundation}>
+                  {name}
+                  {'  '}
+                </Text>
+                <Icon name="edit" onPress={openModal} />
+                <ChangeDisplayNameForm
+                  isVisible={showModal}
+                  setIsVisible={setShowModal}
+                />
+              </View>
+            ) : (
+              <Text style={styles.foundation}>{name}</Text>
+            )}
+            {user && user.role === 'administrator' ? (
+              <View style={{flexDirection: 'row'}}>
+                <Text style={styles.descriptionCampaign}>
+                  {email}
+                  {'  '}
+                </Text>
+                <Icon name="edit" color="#c2c2c2" onPress={openModalEmail} />
+                <ChangeEmailForm
+                  isVisible={showModalEmail}
+                  setIsVisible={setShowModalEmail}
+                />
+              </View>
+            ) : (
+              <Text style={styles.descriptionCampaign}>{email}</Text>
+            )}
           </View>
         </View>
         {foundation ? (
@@ -102,8 +160,6 @@ export default FoundationInformation;
 
 function FoundationLocation(props) {
   const {location, name, address, email} = props;
-
-  console.log(props);
 
   const listInfo = [
     {
@@ -202,5 +258,10 @@ const styles = StyleSheet.create({
   containerListItem: {
     borderBottomColor: '#d8d8d8',
     borderBottomWidth: 1,
+  },
+  editText: {
+    fontWeight: 'bold',
+    fontSize: 20,
+    color: '#00a680',
   },
 });

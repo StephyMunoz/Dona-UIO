@@ -67,7 +67,7 @@ const FoundationNeed = props => {
       toastRef.current.show(
         'Para usar el sistema de favoritos tienes que estar logeado',
       );
-    } else if (user.role === 'user') {
+    } else if (user && user.role === 'user') {
       const payload = {
         idUser: user.uid,
         idFoundation: foundationNeed.item.createdBy,

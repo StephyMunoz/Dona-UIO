@@ -7,13 +7,18 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Image,
+  Alert,
+  Dimensions,
 } from 'react-native';
-import {Avatar, Image as ImageElements} from 'react-native-elements';
+import {Avatar, Icon, Image as ImageElements} from 'react-native-elements';
 import {size} from 'lodash';
 import {useNavigation} from '@react-navigation/native';
 import imageNotFound from '../../images/no-image.png';
 import {Divider} from 'react-native-elements/dist/divider/Divider';
 import Loading from '../Loading';
+import Carousel from '../Carousel';
+
+const screenWidth = Dimensions.get('window').width;
 
 const ListAnimalNeeds = ({animalNeeds, isLoading}) => {
   const navigation = useNavigation();
@@ -55,16 +60,48 @@ function AnimalNeed({animalNeed}) {
     // });
   };
 
+  const handleEdit = () => {
+    Alert.alert(
+      'Editar este registro',
+      '¿Esta seguro que desea editar esta publicación?',
+      [{text: 'Cancelar'}, {text: 'Editar', onPress: handleEditNeed}],
+    );
+  };
+
+  const handleEditNeed = () => {};
+
+  const handleDelete = () => {
+    Alert.alert(
+      'Eliminar requerimiento',
+      '¿Esta seguro que desea eliminar esta publicación?',
+      [
+        {text: 'Cancelar'},
+        {text: 'Eliminar', onPress: handleDeletePublication},
+      ],
+    );
+  };
+
+  const handleDeletePublication = () => {};
+
   return (
-    <TouchableOpacity onPress={goAnimalNeed}>
+    <View>
       <View style={styles.viewAnimalNeed}>
         <Text style={styles.title}>{title}</Text>
-        <ImageElements
-          resizeMode="cover"
-          PlaceholderContent={<ActivityIndicator color="fff" />}
-          source={imageRequirement ? {uri: imageRequirement} : imageNotFound}
-          style={styles.imageAnimalNeed}
+        <Icon
+          name="pencil"
+          type="material-community"
+          size={30}
+          containerStyle={styles.iconEdit}
+          onPress={handleEdit}
         />
+        <Icon
+          name="delete"
+          type="material-community"
+          size={30}
+          containerStyle={styles.iconTrash}
+          onPress={handleDelete}
+        />
+        <Carousel arrayImages={images} height={250} width={screenWidth - 20} />
         {food !== '' && (
           <View>
             <Text style={styles.requirements}>
@@ -88,9 +125,9 @@ function AnimalNeed({animalNeed}) {
             <Text style={styles.requirementsText}>{other}</Text>
           </View>
         )}
-        <Divider />
+        <Divider style={styles.divider} />
       </View>
-    </TouchableOpacity>
+    </View>
   );
 }
 
@@ -106,7 +143,7 @@ function FooterList(props) {
   } else {
     return (
       <View style={styles.notFoundAnimalNeeds}>
-        <Text>No quedan AnimalNeedes por cargar</Text>
+        <Text>No quedan necesidades por cargar</Text>
       </View>
     );
   }
@@ -118,34 +155,45 @@ const styles = StyleSheet.create({
   loaderAnimalNeeds: {
     marginTop: 10,
     marginBottom: 10,
-    alignItems: 'center',
   },
   viewAnimalNeed: {
-    // flexDirection: 'row',
-    alignItems: 'center',
     margin: 10,
   },
   title: {
-    fontSize: 18,
+    fontSize: 20,
     color: '#000',
     textAlign: 'center',
     marginBottom: 10,
+    fontWeight: 'bold',
+  },
+  divider: {
+    marginTop: 10,
+    marginBottom: 20,
+  },
+  iconEdit: {
+    position: 'absolute',
+    right: 40,
+  },
+  iconTrash: {
+    position: 'absolute',
+    right: 10,
   },
   viewAnimalNeedImage: {
     marginRight: 15,
   },
   imageAnimalNeed: {
-    width: 200,
+    width: 300,
     height: 200,
     marginBottom: 10,
   },
   requirements: {
-    fontSize: 15,
+    fontSize: 18,
     fontWeight: 'bold',
     textAlign: 'justify',
+    color: '#000',
   },
   requirementsText: {
-    fontSize: 15,
+    fontSize: 18,
     textAlign: 'justify',
   },
   notFoundAnimalNeeds: {

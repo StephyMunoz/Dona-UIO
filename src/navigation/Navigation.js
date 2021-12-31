@@ -16,6 +16,11 @@ import HumanitarianHelpStack from './HumanitarianHelpStack';
 import CampaignsStack from './CampaignsStack';
 import FoundationsStack from './FoundationsStack';
 import FavoritesStack from './FavoritesStack';
+import ListAnimalCampaigns from '../components/campaigns/ListAnimalCampaigns';
+import ListCampaignsUser from '../components/ListCampaignsUser';
+import FoundationsList from '../screens/FoundationsList';
+import AdministratorStack from './AdministratorStack';
+import FoundationView from '../screens/FoundationView';
 
 const Tab = createBottomTabNavigator();
 
@@ -121,6 +126,11 @@ const Navigation = () => {
             component={AnimalNeedsStack}
             options={{title: 'Necesidades'}}
           />
+          <Tab.Screen
+            name="info_foundation"
+            component={FoundationView}
+            options={{title: 'Fundación'}}
+          />
 
           <Tab.Screen
             name="profile"
@@ -150,10 +160,49 @@ const Navigation = () => {
             component={HumanitarianHelpStack}
             options={{title: 'Necesidades'}}
           />
+          <Tab.Screen
+            name="info_foundation"
+            component={FoundationView}
+            options={{title: 'Fundación'}}
+          />
 
           <Tab.Screen
             name="profile"
             component={EditProfileOptions}
+            options={{title: 'Perfil'}}
+          />
+        </Tab.Navigator>
+      )}
+      {(user && user.role) === 'administrator' && (
+        <Tab.Navigator
+          initialRouteName="home"
+          tabBarOptions={{
+            inactiveTintColor: '#646464',
+            activeTintColor: '#00a680',
+          }}
+          screenOptions={({route}) => ({
+            tabBarIcon: ({color}) => screenOptions(route, color),
+            headerShown: false,
+          })}>
+          <Tab.Screen
+            name="foundations_needs"
+            component={FoundationsStack}
+            options={{title: 'Inicio'}}
+          />
+          <Tab.Screen
+            name="campaigns"
+            component={CampaignsStack}
+            options={{title: 'Campañas'}}
+          />
+          <Tab.Screen
+            name="foundations"
+            component={AdministratorStack}
+            options={{title: 'Fundaciones'}}
+          />
+
+          <Tab.Screen
+            name="profile"
+            component={EditProfileOptionsUser}
             options={{title: 'Perfil'}}
           />
         </Tab.Navigator>
@@ -177,6 +226,9 @@ function screenOptions(route, color) {
     case 'search':
       iconName = 'magnify';
       break;
+    case 'info_foundation':
+      iconName = 'account-box-outline';
+      break;
     case 'campaigns':
       iconName = 'paw';
       break;
@@ -190,6 +242,9 @@ function screenOptions(route, color) {
       iconName = 'paw';
       break;
     case 'humanitarian_help':
+      iconName = 'star-outline';
+      break;
+    case 'foundations':
       iconName = 'star-outline';
       break;
     case 'animalNeeds':

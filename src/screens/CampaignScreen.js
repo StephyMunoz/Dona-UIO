@@ -74,11 +74,8 @@ const CampaignScreen = props => {
     };
   }, [campaignSelected]);
 
-  if (!campaignSelected) return <Loading isVisible={true} text="Cargando..." />;
-
-  if (campaignOwnerAvatar) {
-    console.log(campaignOwnerAvatar);
-  }
+  if (!campaignSelected)
+    return <Loading isVisible={true} text="Cargando información" />;
 
   return (
     <ScrollView vertical style={styles.viewBody}>

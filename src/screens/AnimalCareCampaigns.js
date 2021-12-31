@@ -15,15 +15,17 @@ const AnimalCareCampaigns = () => {
     useCallback(() => {
       const resultAnimalCampaigns = [];
 
-      db.ref(`campaigns`).on('value', snapshot => {
-        snapshot.forEach(campaign => {
-          const q = campaign.val();
-          if (q.createdBy === auth.currentUser.uid) {
-            resultAnimalCampaigns.push(q);
-          }
+      db.ref(`campaigns`)
+        .orderByChild('createdAt')
+        .on('value', snapshot => {
+          snapshot.forEach(campaign => {
+            const q = campaign.val();
+            if (q.createdBy === auth.currentUser.uid) {
+              resultAnimalCampaigns.push(q);
+            }
+          });
+          setAnimalCampaigns(resultAnimalCampaigns.reverse());
         });
-        setAnimalCampaigns(resultAnimalCampaigns);
-      });
       return () => {
         db.ref('campaigns').off();
       };

@@ -1,13 +1,17 @@
-import React, {useCallback, useState} from 'react';
+import React, {useCallback, useRef, useState} from 'react';
 import {View, ScrollView, StyleSheet, Text} from 'react-native';
 import {useFocusEffect} from '@react-navigation/native';
 import {useNavigation} from '@react-navigation/native';
 import {Icon} from 'react-native-elements';
+import Toast from 'react-native-easy-toast';
 import {auth, db} from '../firebase';
 import ListHumanitarianNeeds from '../components/humanitary_needs/ListHumanitarianNeeds';
+import {useAuth} from '../lib/auth';
 
 const HumanitarianNeeds = () => {
   const navigation = useNavigation();
+  const {user} = useAuth();
+  const toastRef = useRef();
   const [humanitarianNeeds, setHumanitarianNeeds] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -16,15 +20,18 @@ const HumanitarianNeeds = () => {
       const resultHumanitarianNeeds = [];
 
       const getRequirements = async () => {
-        await db.ref('foundations').on('value', snapshot => {
-          snapshot.forEach(need => {
-            const q = need.val();
-            if (q.createdBy === auth.currentUser.uid) {
-              resultHumanitarianNeeds.push(q);
-            }
+        await db
+          .ref('foundations')
+          .orderByChild('createdAt')
+          .on('value', snapshot => {
+            snapshot.forEach(need => {
+              const q = need.val();
+              if (q.createdBy === auth.currentUser.uid) {
+                resultHumanitarianNeeds.push(q);
+              }
+            });
+            setHumanitarianNeeds(resultHumanitarianNeeds.reverse());
           });
-          setHumanitarianNeeds(resultHumanitarianNeeds);
-        });
       };
       getRequirements();
       return () => {
@@ -32,22 +39,25 @@ const HumanitarianNeeds = () => {
       };
     }, []),
   );
-  console.log('hh', humanitarianNeeds);
 
   return (
     <View style={styles.viewBody}>
-      <Text style={styles.textStyle}>
-        Listado de requerimientos de la fundación:
-      </Text>
       {humanitarianNeeds.length === 0 ? (
-        <Text style={styles.textEmpty}>
-          Aún no ingresa necesidades para su fundación
-        </Text>
+        <View>
+          {user !== 'user' || user === null ? (
+            <Text style={styles.textEmpty}>Aún no existen registros</Text>
+          ) : (
+            <Text style={styles.textEmpty}>
+              Aún no ingresa necesidades para su fundación
+            </Text>
+          )}
+        </View>
       ) : (
         <ListHumanitarianNeeds
           humanitarianNeeds={humanitarianNeeds}
           // handleLoadMore={handleLoadMore}
           isLoading={isLoading}
+          toastRef={toastRef}
         />
       )}
 
@@ -59,6 +69,7 @@ const HumanitarianNeeds = () => {
         containerStyle={styles.btnContainer}
         onPress={() => navigation.navigate('form_humanitarian_needs')}
       />
+      <Toast ref={toastRef} position="center" opacity={0.9} />
     </View>
   );
 };

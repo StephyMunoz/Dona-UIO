@@ -1,7 +1,6 @@
-import React, {useRef, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
   Alert,
-  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -9,39 +8,49 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import {
-  Button,
-  Input,
-  Button as ButtonElements,
-  Icon,
-  Avatar,
-} from 'react-native-elements';
-import {Formik} from 'formik';
-import {auth, storage, db} from '../../firebase';
-import * as yup from 'yup';
-import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
-import {map, size, filter} from 'lodash';
-import {useAuth} from '../../lib/auth';
-import uuid from 'random-uuid-v4';
+import {useAuth} from '../lib/auth';
 import {useNavigation} from '@react-navigation/native';
+import * as yup from 'yup';
+import {filter, map, size} from 'lodash';
+import {db, storage} from '../firebase';
+import uuid from 'random-uuid-v4';
+import {launchImageLibrary} from 'react-native-image-picker';
+import {Formik} from 'formik';
+import {Avatar, Button, Icon, Input} from 'react-native-elements';
 import Toast from 'react-native-easy-toast';
-import Loading from '../Loading';
+import Loading from './Loading';
 
-const AnimalCampaignForm = () => {
-  const [loading, setLoading] = useState(false);
-  const [loadingText, setLoadingText] = useState(false);
-  const [imagesSelected, setImagesSelected] = useState([]);
+const EditHumanitarianNeed = props => {
+  // /const {routes} = props.params;
+  const {id, images, food, personal_care, other, title, createdAt, createdBy} =
+    props.route.params;
   const {user} = useAuth();
   const toastRef = useRef();
   const navigation = useNavigation();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [imagesSelected, setImagesSelected] = useState([...images]);
+  const [loadingText, setLoadingText] = useState(false);
+  const [getKey, setGetKey] = useState(null);
+
+  useEffect(() => {
+    db.ref('foundations').on('value', snapshot => {
+      snapshot.forEach(needItem => {
+        if (needItem.val().id === id) {
+          setGetKey(needItem.key);
+        }
+      });
+    });
+  }, [id]);
+
+  console.log('props', getKey);
 
   const schema = yup.object().shape({
-    title: yup.string().required('Ingrese un título'),
-    campaignDescription: yup
-      .string()
-      .required('Ingrese una breve descripción de la campaña'),
+    title: yup.string().required('Ingrese un título adecuado'),
+    food: yup.string(),
+    personal_care: yup.string(),
     other: yup.string(),
-    // images: yup.mixed().required('Ingrese al menos una fotografía'),
+    // images: yup.mixed(),
   });
 
   const options = {
@@ -54,37 +63,36 @@ const AnimalCampaignForm = () => {
 
   const onFinish = async data => {
     if (size(imagesSelected) === 0) {
-      console.log('Error');
-      toastRef.current.show(
-        'Debe seleccionar al menos una imagen para continuar',
-      );
       setLoading(false);
+      toastRef.current.show('Seleccione una imagen para poder continuar');
     } else {
       setLoading(true);
+      setError(null);
       try {
         setLoading(true);
-        setLoadingText('Ingresando la información');
+        setLoadingText('Guardando información');
         await uploadImageStorage().then(response => {
-          db.ref('campaigns')
-            .push()
+          db.ref(`foundations/${getKey}`)
             .set({
-              createdAt: new Date().getTime(),
+              updatedAt: new Date().getTime(),
+              createdAt: createdAt,
               title: data.title,
-              campaignDescription: data.campaignDescription,
+              food: data.food,
+              personal_care: data.personal_care,
               other: data.other,
               images: response,
-              createdBy: user.uid,
-              id: uuid(),
+              createdBy: createdBy,
+              id: id,
             })
-            .then(snapshot => {
+            .then(() => {
               setLoading(false);
-              navigation.navigate('animalCampaign');
+              navigation.navigate('humanitarian_needs');
             })
             .catch(e => {
               setLoading(false);
               console.log('e', e);
               toastRef.current.show(
-                'Error al subir la campaña, intentelo más tarde',
+                'Error al subir la información, intentelo más tarde',
               );
             });
         });
@@ -97,9 +105,9 @@ const AnimalCampaignForm = () => {
   const handleLaunchCamera = async () => {
     await launchImageLibrary(options, response => {
       if (response.didCancel) {
-        console.log('User cancelled image picker');
+        toastRef.current.show('Selección de imagen cancelada');
       } else if (response.errorCode) {
-        console.log('ImagePicker Error: ', response.errorCode);
+        toastRef.current.show('Ocurrio un error, intente más tarde');
       } else {
         setImagesSelected([...imagesSelected, response.assets[0].uri]);
       }
@@ -113,10 +121,10 @@ const AnimalCampaignForm = () => {
       map(imagesSelected, async image => {
         const response = await fetch(image);
         const blob = await response.blob();
-        const ref = storage.ref(`campaigns`).child(uuid());
+        const ref = storage.ref(`humanitarian_needs`).child(uuid());
         await ref.put(blob).then(async result => {
           await storage
-            .ref(`campaigns/${result.metadata.name}`)
+            .ref(`humanitarian_needs/${result.metadata.name}`)
             .getDownloadURL()
             .then(photoUrl => {
               imageBlob.push(photoUrl);
@@ -131,7 +139,7 @@ const AnimalCampaignForm = () => {
   const removeImage = image => {
     Alert.alert(
       'Eliminar Imagen',
-      '¿Estas seguro de que quieres eliminar la imagen?',
+      '¿Estas seguro de que quieres eliminar la imagen seleccionada?',
       [
         {
           text: 'Cancel',
@@ -156,10 +164,10 @@ const AnimalCampaignForm = () => {
         <Formik
           validationSchema={schema}
           initialValues={{
-            title: '',
-            campaignDescription: '',
-            other: '',
-            images: null,
+            title: title,
+            food: food ? food : '',
+            personal_care: personal_care ? personal_care : '',
+            other: other ? other : '',
           }}
           onSubmit={onFinish}>
           {({
@@ -171,18 +179,19 @@ const AnimalCampaignForm = () => {
             isValid,
           }) => (
             <>
-              <Text style={styles.textStyle}>Registro de campaña: </Text>
+              <Text style={styles.textStyle}>Registro de necesidades: </Text>
               <Input
                 name="title"
-                placeholder="Ingrese el título de la campaña"
+                placeholder="Ingresa un título adecuado"
                 containerStyle={styles.inputForm}
                 onChangeText={handleChange('title')}
                 onBlur={handleBlur('title')}
                 value={values.title}
+                errorMessage={error}
                 rightIcon={
                   <Icon
-                    type="material-community"
-                    name="account-outline"
+                    type="font-awesome"
+                    name="font"
                     iconStyle={styles.iconRight}
                   />
                 }
@@ -190,37 +199,67 @@ const AnimalCampaignForm = () => {
               {errors.title && (
                 <Text style={{fontSize: 10, color: 'red'}}>{errors.title}</Text>
               )}
-              <Text style={styles.subtitle}>Descripción de la campaña: </Text>
+              <Text style={styles.subtitle}>
+                Alimento que necesita la fundación:{' '}
+              </Text>
               <View style={styles.textInput}>
                 <TextInput
-                  name="campaignDescription"
-                  placeholder="Descripción de la campaña"
-                  onChangeText={handleChange('campaignDescription')}
-                  onBlur={handleBlur('campaignDescription')}
-                  value={values.campaignDescription}
+                  name="food"
+                  placeholder="Ingrese información relacionada con el alimento requerido"
+                  onChangeText={handleChange('food')}
+                  onBlur={handleBlur('food')}
+                  value={values.food}
+                  errorMessage={error}
                   editable
                   multiline
                   numberOfLines={3}
+                  rightIcon={
+                    <Icon
+                      type="font-awesome"
+                      name="font"
+                      iconStyle={styles.iconRight}
+                    />
+                  }
                 />
-                {errors.campaignDescription && (
+                {errors.food && (
                   <Text style={{fontSize: 10, color: 'red'}}>
-                    {errors.campaignDescription}
+                    {errors.food}
                   </Text>
                 )}
               </View>
               <Text style={styles.subtitle}>
-                Más información relacionada a la campaña:{' '}
+                Ingrese productos de higiene personal que necesita la fundación:{' '}
               </Text>
               <View style={styles.textInput}>
                 <TextInput
-                  name="other"
-                  placeholder="Incluya más información (opcional)"
-                  onChangeText={handleChange('other')}
-                  onBlur={handleBlur('other')}
-                  value={values.other}
+                  name="personal_care"
+                  placeholder="Ingrese información relacionada con productos de higiene personal (opcional)"
+                  onChangeText={handleChange('personal_care')}
+                  onBlur={handleBlur('personal_care')}
+                  value={values.personal_care}
+                  errorMessage={error}
                   editable
                   multiline
                   numberOfLines={4}
+                />
+                {errors.personal_care && (
+                  <Text style={{fontSize: 10, color: 'red'}}>
+                    {errors.personal_care}
+                  </Text>
+                )}
+              </View>
+              <Text style={styles.subtitle}>Otras necesidades: </Text>
+              <View style={styles.textInput}>
+                <TextInput
+                  name="other"
+                  placeholder="En este apartado puede incluir otras necesidades de la fundación (opcional)"
+                  onChangeText={handleChange('other')}
+                  onBlur={handleBlur('other')}
+                  value={values.other}
+                  errorMessage={error}
+                  editable
+                  multiline
+                  numberOfLines={3}
                 />
                 {errors.other && (
                   <Text style={{fontSize: 10, color: 'red'}}>
@@ -230,7 +269,7 @@ const AnimalCampaignForm = () => {
               </View>
               <Text style={styles.subtitle}>Seleccione una imagen</Text>
               <View style={styles.viewImages}>
-                {size(imagesSelected) < 5 && (
+                {size(imagesSelected) < 4 && (
                   <TouchableOpacity onPress={handleLaunchCamera}>
                     <Icon
                       type="material-community"
@@ -240,38 +279,34 @@ const AnimalCampaignForm = () => {
                     />
                   </TouchableOpacity>
                 )}
-                {size(imagesSelected) === 0 && (
-                  <Text style={{fontSize: 10, color: 'red'}}>
-                    Seleccione al menos una imagen
-                  </Text>
-                )}
-                {map(imagesSelected, (imageCampaign, index) => (
+
+                {map(imagesSelected, (imageHumanitarian, index) => (
                   <Avatar
                     key={index}
                     style={styles.miniatureStyle}
-                    source={{uri: imageCampaign}}
-                    onPress={() => removeImage(imageCampaign)}
+                    source={{uri: imageHumanitarian}}
+                    onPress={() => removeImage(imageHumanitarian)}
                   />
                 ))}
               </View>
               <Button
                 onPress={handleSubmit}
-                title="Guardar campaña"
-                disabled={!isValid}
+                title="Ingresar requerimiento"
+                // disabled={!isValid}
                 containerStyle={styles.btnContainerLogin}
-                loading={loading}
+                // loading={isLoading}
               />
             </>
           )}
         </Formik>
-        <Toast ref={toastRef} position="center" opacity={0.9} />
-        <Loading isVisible={loading} text={loadingText} />
       </View>
+      <Toast ref={toastRef} position="center" opacity={0.9} />
+      <Loading isVisible={loading} text={loadingText} />
     </ScrollView>
   );
 };
 
-export default AnimalCampaignForm;
+export default EditHumanitarianNeed;
 
 const styles = StyleSheet.create({
   view: {
@@ -286,15 +321,25 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   subtitle: {
-    textAlign: 'center',
+    textAlign: 'left',
     fontSize: 15,
     color: '#000',
+  },
+  inputForm: {
+    textAlign: 'center',
+    borderColor: '#c2c2c2',
   },
   textInput: {
     borderBottomColor: '#c2c2c2',
     borderBottomWidth: 1,
     borderTopColor: '#c2c2c2',
     marginBottom: 10,
+  },
+  checkBox: {
+    backgroundColor: '#f2f2f2',
+  },
+  checkOther: {
+    textAlign: 'center',
   },
   imageButton: {
     textAlign: 'center',

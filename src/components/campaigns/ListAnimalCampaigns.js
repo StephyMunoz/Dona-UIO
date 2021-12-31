@@ -45,8 +45,6 @@ function AnimalCampaign({animalCampaign}) {
   // console.log('images', images);
 
   const goAnimalCampaign = () => {
-    console.log('image  Selected', images[0]);
-
     // navigation.navigate('AnimalCampaign', {
     //   id,
     //   name,

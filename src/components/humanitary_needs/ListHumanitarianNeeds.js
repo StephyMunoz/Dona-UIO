@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   StyleSheet,
   Text,
@@ -7,15 +7,21 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Image,
+  Dimensions,
+  Alert,
 } from 'react-native';
-import {Avatar, Image as ImageElements} from 'react-native-elements';
+import {Avatar, Icon, Image as ImageElements} from 'react-native-elements';
 import {size} from 'lodash';
 import {useNavigation} from '@react-navigation/native';
 import imageNotFound from '../../images/no-image.png';
 import {Divider} from 'react-native-elements/dist/divider/Divider';
 import Loading from '../Loading';
+import {db} from '../../firebase';
+import Carousel from '../Carousel';
 
-const ListHumanitarianNeeds = ({humanitarianNeeds, isLoading}) => {
+const screenWidth = Dimensions.get('window').width;
+
+const ListHumanitarianNeeds = ({humanitarianNeeds, isLoading, toastRef}) => {
   const navigation = useNavigation();
 
   return (
@@ -23,7 +29,13 @@ const ListHumanitarianNeeds = ({humanitarianNeeds, isLoading}) => {
       {size(humanitarianNeeds) > 0 ? (
         <FlatList
           data={humanitarianNeeds}
-          renderItem={need => <HumanitarianNeed humanitarianNeed={need} />}
+          renderItem={need => (
+            <HumanitarianNeed
+              humanitarianNeed={need}
+              toastRef={toastRef}
+              navigation={navigation}
+            />
+          )}
           keyExtractor={(item, index) => index.toString()}
           onEndReachedThreshold={0.5}
           // onEndReached={handleLoadMore}
@@ -40,57 +52,129 @@ const ListHumanitarianNeeds = ({humanitarianNeeds, isLoading}) => {
   );
 };
 
-function HumanitarianNeed({humanitarianNeed}) {
-  const {id, images, food, personal_care, other, title} = humanitarianNeed.item;
-  const imageNeed = images ? images[0] : null;
+function HumanitarianNeed({humanitarianNeed, toastRef, navigation}) {
+  const {id, images, food, personal_care, other, title, createdBy, createdAt} =
+    humanitarianNeed.item;
+  const [loading, setLoading] = useState(false);
+  const [loadingText, setLoadingText] = useState(null);
 
-  // console.log('images', images);
+  const handleEdit = () => {
+    Alert.alert(
+      'Editar el registro',
+      '¿Esta seguro que desea editar esta publicación?',
+      [{text: 'Cancelar'}, {text: 'Editar', onPress: handleEditPublication}],
+    );
+  };
 
-  const goHumanitarianNeed = () => {
-    console.log('image  Selected', images[0]);
+  const handleEditPublication = () => {
+    navigation.navigate('form_edit_needs', {
+      id,
+      images,
+      food,
+      personal_care,
+      other,
+      title,
+      createdBy,
+      createdAt,
+    });
+  };
 
-    // navigation.navigate('humanitarianNeed', {
-    //   id,
-    //   name,
-    // });
+  const handleDelete = () => {
+    Alert.alert(
+      'Eliminar requerimiento',
+      '¿Esta seguro que desea eliminar esta publicación?',
+      [{text: 'Cancelar'}, {text: 'Eliminar', onPress: handlePublication}],
+    );
+  };
+
+  const handlePublication = () => {
+    setLoading(true);
+    setLoadingText('Eliminando requerimiento');
+    let needFoundationKey = '';
+    db.ref('foundations').on('value', snapshot => {
+      snapshot.forEach(needItem => {
+        if (
+          needItem.val().createdBy === createdBy &&
+          needItem.val().id === id
+        ) {
+          needFoundationKey = needItem.key;
+        }
+      });
+    });
+
+    try {
+      db.ref(`foundations/${needFoundationKey}`)
+        .remove()
+        .then(() => {
+          setLoading(false);
+          toastRef.current.show('Publicación eliminada correctamente');
+        })
+        .catch(() => {
+          setLoading(false);
+          toastRef.current.show(
+            'Ha ocurrido un error, por favor intente nuevamente más tarde',
+          );
+        });
+    } catch (e) {
+      setLoading(false);
+      toastRef.current.show(
+        'Ha ocurrido un error, por favor intente nuevamente más tarde',
+      );
+    }
+
+    return () => {
+      db.ref('foundations').off();
+    };
   };
 
   return (
-    <TouchableOpacity onPress={goHumanitarianNeed}>
+    <View>
       <View style={styles.viewHumanitarianNeed}>
         <Text style={styles.title}>{title}</Text>
-        <ImageElements
-          resizeMode="cover"
-          PlaceholderContent={<ActivityIndicator color="fff" />}
-          source={imageNeed ? {uri: imageNeed} : imageNotFound}
-          style={styles.imageHumanitarianNeed}
+        <Icon
+          name="edit"
+          style="material-community"
+          size={30}
+          containerStyle={styles.iconEdit}
+          onPress={handleEdit}
         />
-        {food !== '' && (
-          <View>
-            <Text style={styles.requirements}>
-              Requerimientos alimenticios:{' '}
-            </Text>
-            <Text style={styles.requirementsText}>{food}</Text>
-          </View>
-        )}
+        <Icon
+          name="delete"
+          style="material-community"
+          size={30}
+          containerStyle={styles.iconTrash}
+          onPress={handleDelete}
+        />
+        <Carousel arrayImages={images} height={250} width={screenWidth - 20} />
+        <View style={styles.needItem}>
+          {food !== '' && (
+            <View>
+              <Text style={styles.requirements}>
+                Requerimientos alimenticios:{' '}
+              </Text>
+              <Text style={styles.requirementsText}>{food}</Text>
+            </View>
+          )}
 
-        {personal_care !== '' && (
-          <View>
-            <Text style={styles.requirements}>
-              Implementos de aseo personal:{' '}
-            </Text>
-            <Text style={styles.requirementsText}>{personal_care}</Text>
-          </View>
-        )}
-        {other !== '' && (
-          <View>
-            <Text style={styles.requirements}>Comentarios: </Text>
-            <Text style={styles.requirementsText}>{other}</Text>
-          </View>
-        )}
-        <Divider />
+          {personal_care !== '' && (
+            <View>
+              <Text style={styles.requirements}>
+                Implementos de aseo personal:{' '}
+              </Text>
+              <Text style={styles.requirementsText}>{personal_care}</Text>
+            </View>
+          )}
+          {other !== '' && (
+            <View>
+              <Text style={styles.requirements}>Comentarios: </Text>
+              <Text style={styles.requirementsText}>{other}</Text>
+            </View>
+          )}
+          <Divider style={styles.divider} />
+        </View>
       </View>
-    </TouchableOpacity>
+      <Loading isVisible={loading} text={loadingText} />
+    </View>
   );
 }
 
@@ -118,39 +202,54 @@ const styles = StyleSheet.create({
   loaderHumanitarianNeeds: {
     marginTop: 10,
     marginBottom: 10,
-    alignItems: 'center',
   },
   viewHumanitarianNeed: {
-    // flexDirection: 'row',
-    alignItems: 'center',
     margin: 10,
   },
   title: {
-    fontSize: 18,
+    fontSize: 20,
     color: '#000',
-    textAlign: 'center',
     marginBottom: 10,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  iconEdit: {
+    position: 'absolute',
+    right: 50,
+  },
+  iconTrash: {
+    position: 'absolute',
+    right: 10,
   },
   viewHumanitarianNeedImage: {
     marginRight: 15,
   },
   imageHumanitarianNeed: {
-    width: 200,
-    height: 200,
+    width: screenWidth - 20,
+    height: 250,
     marginBottom: 10,
   },
   requirements: {
-    fontSize: 15,
+    fontSize: 18,
     fontWeight: 'bold',
     textAlign: 'justify',
+    // color: '#000',
   },
   requirementsText: {
-    fontSize: 15,
+    fontSize: 18,
     textAlign: 'justify',
+    color: '#000',
   },
   notFoundHumanitarianNeeds: {
     marginTop: 10,
     marginBottom: 20,
     alignItems: 'center',
+  },
+  images: {
+    alignItems: 'center',
+  },
+  divider: {
+    marginBottom: 20,
+    marginTop: 10,
   },
 });

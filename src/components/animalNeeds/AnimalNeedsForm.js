@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useRef, useState} from 'react';
 import {
   Alert,
   Image,
@@ -19,26 +19,27 @@ import {
 import {Formik} from 'formik';
 import {auth, storage, db} from '../../firebase';
 import * as yup from 'yup';
-import * as Permissions from 'react-native-permissions';
-// import * as ImagePicker from 'react-native-image-picker';
-import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
+import {launchImageLibrary} from 'react-native-image-picker';
 import {map, size, filter} from 'lodash';
 import {useAuth} from '../../lib/auth';
 import {Dropdown} from 'react-native-material-dropdown';
 import Loading from '../Loading';
 import uuid from 'random-uuid-v4';
 import {useNavigation} from '@react-navigation/native';
+import Toast from 'react-native-easy-toast';
 
 const AnimalNeedsForm = () => {
   const {user} = useAuth();
+  const toastRef = useRef();
   const navigation = useNavigation();
   const [loading, setLoading] = useState(false);
+  const [loadingText, setLoadingText] = useState(false);
   const [error, setError] = useState(null);
   const [imagesSelected, setImagesSelected] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const schema = yup.object().shape({
-    title: yup.string().required('Ingrese un título'),
+    title: yup.string().required('Ingrese un título').unique,
     food: yup.string(),
     medicine: yup.string(),
     other: yup.string(),
@@ -56,11 +57,10 @@ const AnimalNeedsForm = () => {
   const onFinish = async data => {
     if (size(imagesSelected) === 0) {
       setIsLoading(false);
-      // setError('Seleccione al menos una imagen');
-      console.log('Seleccione al menos una imagen');
+      toastRef.current.show('Seleccione al menos una imagen para continuar');
     } else {
       setIsLoading(true);
-      setError(null);
+      setLoadingText('Ingresando información');
       try {
         setIsLoading(true);
         await uploadImageStorage().then(response => {
@@ -68,13 +68,14 @@ const AnimalNeedsForm = () => {
           db.ref('foundations')
             .push()
             .set({
-              createdAt: new Date(),
+              createdAt: new Date().getTime(),
               title: data.title,
               food: data.food,
               medicine: data.medicine,
               other: data.other,
               images: response,
               createdBy: user.uid,
+              id: uuid(),
             })
             .then(() => {
               setIsLoading(false);
@@ -82,10 +83,9 @@ const AnimalNeedsForm = () => {
             })
             .catch(e => {
               setIsLoading(false);
-              console.log('e', e);
-              // toastRef.current.show(
-              //   'Error al subir el restaurante, intentelo más tarde',
-              // );
+              toastRef.current.show(
+                'Error al subir la necesidad, intentelo más tarde',
+              );
             });
         });
       } catch (e) {
@@ -301,6 +301,8 @@ const AnimalNeedsForm = () => {
             </>
           )}
         </Formik>
+        <Toast ref={toastRef} position="center" opacity={0.9} />
+        <Loading isVisible={loading} text={loadingText} />
       </View>
     </ScrollView>
   );

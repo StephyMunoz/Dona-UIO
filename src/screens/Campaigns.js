@@ -1,14 +1,19 @@
-import React, {useCallback, useState} from 'react';
+import React, {useCallback, useRef, useState} from 'react';
 import {View, ScrollView, StyleSheet, Text} from 'react-native';
 import {useFocusEffect} from '@react-navigation/native';
 import {useNavigation} from '@react-navigation/native';
+
 import {Icon} from 'react-native-elements';
 import {auth, db} from '../firebase';
 import ListAnimalCampaigns from '../components/campaigns/ListAnimalCampaigns';
 import ListCampaignsUser from '../components/ListCampaignsUser';
+import Toast from 'react-native-easy-toast';
+import {useAuth} from '../lib/auth';
 
 const Campaigns = () => {
   const navigation = useNavigation();
+  const toastRef = useRef();
+  const {user} = useAuth();
   const [animalCampaigns, setAnimalCampaigns] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -17,16 +22,18 @@ const Campaigns = () => {
       const resultAnimalCampaigns = [];
 
       const getCampaigns = async () => {
-        db.ref(`campaigns`).on('value', snapshot => {
-          snapshot.forEach(campaign => {
-            // let key = campaign.key;
+        db.ref(`campaigns`)
+          .orderByChild('createdAt')
+          .on('value', snapshot => {
+            snapshot.forEach(campaign => {
+              // let key = campaign.key;
 
-            const q = campaign.val();
-            resultAnimalCampaigns.push(q);
+              const q = campaign.val();
+              resultAnimalCampaigns.push(q);
+            });
+            setAnimalCampaigns(resultAnimalCampaigns.reverse());
+            // setAnimalCampaignKey(resultId);
           });
-          setAnimalCampaigns(resultAnimalCampaigns);
-          // setAnimalCampaignKey(resultId);
-        });
       };
       getCampaigns();
 
@@ -35,8 +42,6 @@ const Campaigns = () => {
       };
     }, []),
   );
-  // console.log('buscar', animalCampaigns);
-  // console.log('buscarId', animalCampaignKey);
 
   return (
     <View style={styles.viewBody}>
@@ -48,17 +53,22 @@ const Campaigns = () => {
           animalCampaigns={animalCampaigns}
           // handleLoadMore={handleLoadMore}
           isLoading={isLoading}
+          toastRef={toastRef}
         />
       )}
 
-      <Icon
-        reverse
-        type="material-community"
-        name="plus"
-        color="#00a680"
-        containerStyle={styles.btnContainer}
-        onPress={() => navigation.navigate('form_animal_campaign')}
-      />
+      {user &&
+        (user.role === 'animal_help' || user.role === 'humanitarian_help') && (
+          <Icon
+            reverse
+            type="material-community"
+            name="plus"
+            color="#00a680"
+            containerStyle={styles.btnContainer}
+            onPress={() => navigation.navigate('form_animal_campaign')}
+          />
+        )}
+      <Toast ref={toastRef} position="center" opacity={0.9} />
     </View>
   );
 };
