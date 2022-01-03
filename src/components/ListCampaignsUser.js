@@ -9,6 +9,7 @@ import {
   Image,
   ScrollView,
   Dimensions,
+  Alert,
 } from 'react-native';
 import {
   Avatar,
@@ -58,10 +59,12 @@ const ListCampaignsUser = ({animalCampaigns, isLoading, toastRef}) => {
 };
 
 function AnimalCampaign({animalCampaign, navigation, toastRef}) {
-  const {id, images, campaignDescription, other, title, createdBy} =
+  const {id, images, campaignDescription, other, title, createdBy, createdAt} =
     animalCampaign.item;
   const [foundation, setFoundation] = useState(null);
   const [avatar, setAvatar] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadingText, setLoadingText] = useState(null);
   const {user} = useAuth();
   // console.log(animalCampaign);
 
@@ -108,8 +111,91 @@ function AnimalCampaign({animalCampaign, navigation, toastRef}) {
     });
   };
 
+  const handleDelete = () => {
+    Alert.alert(
+      'Eliminar campaña',
+      '¿Esta seguro que desea eliminar esta campaña?',
+      [{text: 'Cancelar'}, {text: 'Eliminar', onPress: handleDeleteCampaign}],
+    );
+  };
+
+  const handleDeleteCampaign = () => {
+    setIsLoading(true);
+    setLoadingText('Eliminando campaña, espere');
+    let campaignDeleteKey = '';
+    db.ref('campaigns').on('value', snapshot => {
+      snapshot.forEach(needItem => {
+        if (needItem.val().id === id) {
+          campaignDeleteKey = needItem.key;
+        }
+      });
+    });
+
+    try {
+      db.ref(`campaigns/${campaignDeleteKey}`)
+        .remove()
+        .then(() => {
+          setIsLoading(false);
+          toastRef.current.show('Publicación eliminada correctamente');
+        })
+        .catch(() => {
+          setIsLoading(false);
+          toastRef.current.show(
+            'Ha ocurrido un error, por favor intente nuevamente más tarde',
+          );
+        });
+    } catch (e) {
+      setIsLoading(false);
+      toastRef.current.show(
+        'Ha ocurrido un error, por favor intente nuevamente más tarde',
+      );
+    }
+
+    return () => {
+      db.ref('campaigns').off();
+    };
+  };
+
+  const handleEdit = () => {
+    Alert.alert(
+      'Editar la campaña',
+      '¿Esta seguro que desea editar esta campaña?',
+      [{text: 'Cancelar'}, {text: 'Editar', onPress: handleEditCampaign}],
+    );
+  };
+
+  const handleEditCampaign = () => {
+    navigation.navigate('edit_campaign_animals', {
+      id,
+      images,
+      campaignDescription,
+      other,
+      title,
+      createdBy,
+      createdAt,
+    });
+  };
+
   return (
     <View style={styles.viewAnimalCampaign}>
+      {user && user.role === 'administrator' && (
+        <View>
+          <Icon
+            name="pencil"
+            type="material-community"
+            containerStyle={styles.iconEdit}
+            size={35}
+            onPress={handleEdit}
+          />
+          <Icon
+            name="trash-can-outline"
+            type="material-community"
+            containerStyle={styles.iconTrash}
+            size={35}
+            onPress={handleDelete}
+          />
+        </View>
+      )}
       <View style={{flexDirection: 'row'}}>
         <Avatar
           source={{uri: avatar}}
@@ -123,15 +209,6 @@ function AnimalCampaign({animalCampaign, navigation, toastRef}) {
             <Text style={styles.descriptionCampaign}>{foundation.email}</Text>
           </View>
         </TouchableOpacity>
-        {user.role === 'administrator' && (
-          <Icon
-            name="trash-can-outline"
-            type="material-community"
-            containerStyle={styles.iconTrash}
-            size={35}
-            // onPress={handleDelete}
-          />
-        )}
       </View>
 
       <Carousel arrayImages={images} height={200} width={screenWidth} />
@@ -149,6 +226,7 @@ function AnimalCampaign({animalCampaign, navigation, toastRef}) {
         </View>
       )}
       <Divider style={styles.divider} />
+      <Loading isVisible={isLoading} text={loadingText} />
     </View>
   );
 }
@@ -190,6 +268,14 @@ const styles = StyleSheet.create({
   viewAnimalCampaignImage: {
     marginRight: 15,
   },
+  iconTrash: {
+    position: 'absolute',
+    right: 10,
+  },
+  iconEdit: {
+    position: 'absolute',
+    right: 50,
+  },
   imageAnimalCampaign: {
     width: 200,
     height: 200,
@@ -228,10 +314,6 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 30,
     color: '#000',
-  },
-  iconTrash: {
-    position: 'absolute',
-    right: 10,
   },
   descriptionCampaign: {
     marginTop: 5,

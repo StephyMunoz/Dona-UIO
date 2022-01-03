@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {
   StyleSheet,
   Text,
@@ -7,14 +7,21 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Image,
+  Dimensions,
+  Alert,
 } from 'react-native';
-import {Avatar, Image as ImageElements} from 'react-native-elements';
+import {Avatar, Icon, Image as ImageElements} from 'react-native-elements';
 import {size} from 'lodash';
 import {useNavigation} from '@react-navigation/native';
 import imageNotFound from '../../images/no-image.png';
 import {Divider} from 'react-native-elements/dist/divider/Divider';
+import Carousel from '../Carousel';
+import {db} from '../../firebase';
+import Loading from '../Loading';
 
-const ListAnimalCampaigns = ({animalCampaigns, isLoading}) => {
+const screenWidth = Dimensions.get('window').width;
+
+const ListAnimalCampaigns = ({animalCampaigns, isLoading, toastRef}) => {
   const navigation = useNavigation();
 
   return (
@@ -22,11 +29,19 @@ const ListAnimalCampaigns = ({animalCampaigns, isLoading}) => {
       {size(animalCampaigns) > 0 ? (
         <FlatList
           data={animalCampaigns}
-          renderItem={campaign => <AnimalCampaign animalCampaign={campaign} />}
+          renderItem={campaign => (
+            <AnimalCampaign
+              animalCampaign={campaign}
+              toastRef={toastRef}
+              navigation={navigation}
+            />
+          )}
           keyExtractor={(item, index) => index.toString()}
           onEndReachedThreshold={0.5}
           // onEndReached={handleLoadMore}
-          ListFooterComponent={<FooterList isLoading={isLoading} />}
+          ListFooterComponent={
+            <FooterList isLoading={isLoading} navigation={navigation} />
+          }
         />
       ) : (
         <View style={styles.loaderAnimalCampaigns}>
@@ -38,29 +53,102 @@ const ListAnimalCampaigns = ({animalCampaigns, isLoading}) => {
   );
 };
 
-function AnimalCampaign({animalCampaign}) {
-  const {id, images, campaignDescription, other, title} = animalCampaign.item;
-  const imageCampaign = images ? images[0] : null;
+function AnimalCampaign({animalCampaign, navigation, toastRef}) {
+  const {id, images, campaignDescription, other, title, createdAt, createdBy} =
+    animalCampaign.item;
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadingText, setLoadingText] = useState(null);
 
-  // console.log('images', images);
+  const handleEdit = () => {
+    Alert.alert(
+      'Editar la campaña',
+      '¿Esta seguro que desea editar esta campaña?',
+      [{text: 'Cancelar'}, {text: 'Editar', onPress: handleEditCampaign}],
+    );
+  };
 
-  const goAnimalCampaign = () => {
-    // navigation.navigate('AnimalCampaign', {
-    //   id,
-    //   name,
-    // });
+  const handleEditCampaign = () => {
+    navigation.navigate('edit_campaign', {
+      id,
+      images,
+      campaignDescription,
+      other,
+      title,
+      createdBy,
+      createdAt,
+    });
+  };
+
+  const handleDelete = () => {
+    Alert.alert(
+      'Eliminar campaña',
+      '¿Esta seguro que desea eliminar esta campaña?',
+      [
+        {text: 'Cancelar'},
+        {text: 'Eliminar', onPress: handleDeletePublication},
+      ],
+    );
+  };
+
+  const handleDeletePublication = () => {
+    setIsLoading(true);
+    setLoadingText('Eliminando campaña');
+    let campaignKey = '';
+    db.ref('campaigns').on('value', snapshot => {
+      snapshot.forEach(needItem => {
+        if (
+          needItem.val().createdBy === createdBy &&
+          needItem.val().id === id
+        ) {
+          campaignKey = needItem.key;
+        }
+      });
+    });
+
+    try {
+      db.ref(`campaigns/${campaignKey}`)
+        .remove()
+        .then(() => {
+          setIsLoading(false);
+          toastRef.current.show('Publicación eliminada exitosamente');
+        })
+        .catch(() => {
+          setIsLoading(false);
+          toastRef.current.show(
+            'Ha ocurrido un error, por favor intente nuevamente más tarde',
+          );
+        });
+    } catch (e) {
+      setIsLoading(false);
+      toastRef.current.show(
+        'Ha ocurrido un error, por favor intente nuevamente más tarde',
+      );
+    }
+
+    return () => {
+      db.ref('campaigns').off();
+    };
   };
 
   return (
-    <TouchableOpacity onPress={goAnimalCampaign}>
+    <View>
       <View style={styles.viewAnimalCampaign}>
         <Text style={styles.title}>{title}</Text>
-        <ImageElements
-          resizeMode="cover"
-          PlaceholderContent={<ActivityIndicator color="fff" />}
-          source={imageCampaign ? {uri: imageCampaign} : imageNotFound}
-          style={styles.imageAnimalCampaign}
+        <Icon
+          name="pencil"
+          type="material-community"
+          size={30}
+          containerStyle={styles.iconEdit}
+          onPress={handleEdit}
         />
+        <Icon
+          name="delete"
+          type="material-community"
+          size={30}
+          containerStyle={styles.iconTrash}
+          onPress={handleDelete}
+        />
+        <Carousel arrayImages={images} height={250} width={screenWidth - 20} />
         <View>
           <Text style={styles.requirements}>Descripción: </Text>
           <Text style={styles.requirementsText}>{campaignDescription}</Text>
@@ -73,7 +161,8 @@ function AnimalCampaign({animalCampaign}) {
         )}
         <Divider />
       </View>
-    </TouchableOpacity>
+      <Loading isVisible={isLoading} text={loadingText} />
+    </View>
   );
 }
 
@@ -101,18 +190,16 @@ const styles = StyleSheet.create({
   loaderAnimalCampaigns: {
     marginTop: 10,
     marginBottom: 10,
-    alignItems: 'center',
   },
   viewAnimalCampaign: {
-    // flexDirection: 'row',
-    alignItems: 'center',
     margin: 10,
   },
   title: {
-    fontSize: 18,
+    fontSize: 20,
     color: '#000',
     textAlign: 'center',
     marginBottom: 10,
+    fontWeight: 'bold',
   },
   viewAnimalCampaignImage: {
     marginRight: 15,
@@ -123,12 +210,21 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   requirements: {
-    fontSize: 15,
+    fontSize: 18,
     fontWeight: 'bold',
     textAlign: 'justify',
+    color: '#000',
+  },
+  iconEdit: {
+    position: 'absolute',
+    right: 40,
+  },
+  iconTrash: {
+    position: 'absolute',
+    right: 10,
   },
   requirementsText: {
-    fontSize: 15,
+    fontSize: 18,
     textAlign: 'justify',
   },
   notFoundAnimalCampaigns: {

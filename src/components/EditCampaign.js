@@ -10,32 +10,30 @@ import {
 } from 'react-native';
 import {useAuth} from '../lib/auth';
 import {useNavigation} from '@react-navigation/native';
+import {db, storage} from '../firebase';
 import * as yup from 'yup';
 import {filter, map, size} from 'lodash';
-import {db, storage} from '../firebase';
-import uuid from 'random-uuid-v4';
 import {launchImageLibrary} from 'react-native-image-picker';
+import uuid from 'random-uuid-v4';
 import {Formik} from 'formik';
 import {Avatar, Button, Icon, Input} from 'react-native-elements';
 import Toast from 'react-native-easy-toast';
 import Loading from './Loading';
 
-const EditAnimalNeed = props => {
-  // /const {routes} = props.params;
-  const {id, images, food, medicine, other, title, createdAt, createdBy} =
+const EditCampaign = props => {
+  const {id, images, campaignDescription, other, title, createdBy, createdAt} =
     props.route.params;
-  const {user} = useAuth();
   const toastRef = useRef();
+  const {user} = useAuth();
   const navigation = useNavigation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [imagesSelected, setImagesSelected] = useState([...images]);
   const [loadingText, setLoadingText] = useState(false);
   const [getKey, setGetKey] = useState(null);
-  console.log('id', id);
 
   useEffect(() => {
-    db.ref('foundations').on('value', snapshot => {
+    db.ref('campaigns').on('value', snapshot => {
       snapshot.forEach(needItem => {
         if (needItem.val().id === id) {
           setGetKey(needItem.key);
@@ -44,42 +42,43 @@ const EditAnimalNeed = props => {
     });
   }, [id]);
 
-  console.log('props', getKey);
-
   const schema = yup.object().shape({
-    title: yup.string().required('Ingrese un título adecuado'),
-    food: yup.string(),
-    personal_care: yup.string(),
+    title: yup.string().required('Ingrese un título'),
+    campaignDescription: yup
+      .string()
+      .required('Ingrese una breve descripción de la campaña'),
     other: yup.string(),
-    // images: yup.mixed(),
   });
 
   const options = {
-    titleImage: 'Selecciona una imagen',
+    titleImage: 'Selecciona imagen',
     storageOptions: {
       skipBackup: true,
       path: 'images,',
     },
   };
 
+  if (!getKey) {
+    return <Loading isVisible={true} />;
+  }
+
   const onFinish = async data => {
     if (size(imagesSelected) === 0) {
       setLoading(false);
-      toastRef.current.show('Seleccione al menos imagen para poder continuar');
+      toastRef.current.show('Seleccione al menos imagen para continuar');
     } else {
       setLoading(true);
       setError(null);
       try {
         setLoading(true);
-        setLoadingText('Guardando información');
+        setLoadingText('Actualizando información');
         await uploadImageStorage().then(response => {
-          db.ref(`foundations/${getKey}`)
+          db.ref(`campaigns/${getKey}`)
             .set({
               updatedAt: new Date().getTime(),
               createdAt: createdAt,
               title: data.title,
-              food: data.food,
-              medicine: data.medicine,
+              campaignDescription: data.campaignDescription,
               other: data.other,
               images: response,
               createdBy: createdBy,
@@ -87,7 +86,11 @@ const EditAnimalNeed = props => {
             })
             .then(() => {
               setLoading(false);
-              navigation.navigate('animal_needs');
+              if (user && user.role === 'administrator') {
+                navigation.navigate('campaigns_page');
+              } else {
+                navigation.navigate('animalCampaign');
+              }
             })
             .catch(e => {
               setLoading(false);
@@ -106,7 +109,7 @@ const EditAnimalNeed = props => {
   const handleLaunchCamera = async () => {
     await launchImageLibrary(options, response => {
       if (response.didCancel) {
-        toastRef.current.show('Selección de imagen cancelada');
+        toastRef.current.show('Selección de imagen ha sido cancelada');
       } else if (response.errorCode) {
         toastRef.current.show('Ocurrio un error, intente más tarde');
       } else {
@@ -122,10 +125,10 @@ const EditAnimalNeed = props => {
       map(imagesSelected, async image => {
         const response = await fetch(image);
         const blob = await response.blob();
-        const ref = storage.ref(`humanitarian_needs`).child(uuid());
+        const ref = storage.ref(`campaigns`).child(uuid());
         await ref.put(blob).then(async result => {
           await storage
-            .ref(`humanitarian_needs/${result.metadata.name}`)
+            .ref(`campaigns/${result.metadata.name}`)
             .getDownloadURL()
             .then(photoUrl => {
               imageBlob.push(photoUrl);
@@ -140,7 +143,7 @@ const EditAnimalNeed = props => {
   const removeImage = image => {
     Alert.alert(
       'Eliminar Imagen',
-      '¿Estas seguro de que quieres eliminar la imagen seleccionada?',
+      '¿Estas seguro de que deseas eliminar la imagen seleccionada?',
       [
         {
           text: 'Cancel',
@@ -166,8 +169,7 @@ const EditAnimalNeed = props => {
           validationSchema={schema}
           initialValues={{
             title: title,
-            food: food ? food : '',
-            medicine: medicine ? medicine : '',
+            campaignDescription: campaignDescription ? campaignDescription : '',
             other: other ? other : '',
           }}
           onSubmit={onFinish}>
@@ -180,19 +182,18 @@ const EditAnimalNeed = props => {
             isValid,
           }) => (
             <>
-              <Text style={styles.textStyle}>Registro de necesidades: </Text>
+              <Text style={styles.textStyle}>Registro de campaña: </Text>
               <Input
                 name="title"
-                placeholder="Ingresa un título adecuado"
+                placeholder="Ingrese el título de la campaña"
                 containerStyle={styles.inputForm}
                 onChangeText={handleChange('title')}
                 onBlur={handleBlur('title')}
                 value={values.title}
-                errorMessage={error}
                 rightIcon={
                   <Icon
-                    type="font-awesome"
-                    name="font"
+                    type="material-community"
+                    name="account-outline"
                     iconStyle={styles.iconRight}
                   />
                 }
@@ -200,71 +201,37 @@ const EditAnimalNeed = props => {
               {errors.title && (
                 <Text style={{fontSize: 10, color: 'red'}}>{errors.title}</Text>
               )}
-              <Text style={styles.subtitle}>
-                Tipo de alimento balanceado que necesita la fundación:{' '}
-              </Text>
+              <Text style={styles.subtitle}>Descripción de la campaña: </Text>
               <View style={styles.textInput}>
                 <TextInput
-                  name="food"
-                  placeholder="Ingrese información relacionada con el alimento balanceado"
-                  onChangeText={handleChange('food')}
-                  onBlur={handleBlur('food')}
-                  value={values.food}
-                  errorMessage={error}
+                  name="campaignDescription"
+                  placeholder="Descripción de la campaña"
+                  onChangeText={handleChange('campaignDescription')}
+                  onBlur={handleBlur('campaignDescription')}
+                  value={values.campaignDescription}
                   editable
                   multiline
                   numberOfLines={3}
-                  rightIcon={
-                    <Icon
-                      type="font-awesome"
-                      name="font"
-                      iconStyle={styles.iconRight}
-                    />
-                  }
                 />
-                {errors.food && (
+                {errors.campaignDescription && (
                   <Text style={{fontSize: 10, color: 'red'}}>
-                    {errors.food}
+                    {errors.campaignDescription}
                   </Text>
                 )}
               </View>
               <Text style={styles.subtitle}>
-                Ingrese el medicamento que necesita la fundación:{' '}
+                Más información relacionada a la campaña:{' '}
               </Text>
-              <Text style={styles.subtitleUnder}>
-                Incluya información relacionada con marcas, genéricos, cantidad,
-                etc., del medicamento requerido
-              </Text>
-              <View style={styles.textInput}>
-                <TextInput
-                  name="medicine"
-                  placeholder="Ingrese información relacionada al medicamento (opcional)"
-                  onChangeText={handleChange('medicine')}
-                  onBlur={handleBlur('medicine')}
-                  value={values.medicine}
-                  errorMessage={error}
-                  editable
-                  multiline
-                  numberOfLines={4}
-                />
-                {errors.medicine && (
-                  <Text style={{fontSize: 10, color: 'red'}}>
-                    {errors.medicine}
-                  </Text>
-                )}
-              </View>
-              <Text style={styles.subtitle}>Otras necesidades: </Text>
               <View style={styles.textInput}>
                 <TextInput
                   name="other"
-                  placeholder="En este apartado puede incluir otras necesidades de la fundación (opcional)"
+                  placeholder="Incluya más información (opcional)"
                   onChangeText={handleChange('other')}
                   onBlur={handleBlur('other')}
                   value={values.other}
-                  errorMessage={error}
                   editable
                   multiline
-                  numberOfLines={3}
+                  numberOfLines={4}
                 />
                 {errors.other && (
                   <Text style={{fontSize: 10, color: 'red'}}>
@@ -274,7 +241,7 @@ const EditAnimalNeed = props => {
               </View>
               <Text style={styles.subtitle}>Seleccione una imagen</Text>
               <View style={styles.viewImages}>
-                {size(imagesSelected) < 4 && (
+                {size(imagesSelected) < 5 && (
                   <TouchableOpacity onPress={handleLaunchCamera}>
                     <Icon
                       type="material-community"
@@ -289,21 +256,20 @@ const EditAnimalNeed = props => {
                     Seleccione al menos una imagen
                   </Text>
                 )}
-                {map(imagesSelected, (imageRestaurant, index) => (
+                {map(imagesSelected, (imageCampaign, index) => (
                   <Avatar
                     key={index}
                     style={styles.miniatureStyle}
-                    source={{uri: imageRestaurant}}
-                    onPress={() => removeImage(imageRestaurant)}
+                    source={{uri: imageCampaign}}
+                    onPress={() => removeImage(imageCampaign)}
                   />
                 ))}
               </View>
               <Button
                 onPress={handleSubmit}
-                title="Ingresar requerimiento"
-                // disabled={!isValid}
+                title="Actualizar campaña"
+                disabled={!isValid}
                 containerStyle={styles.btnContainerLogin}
-                // loading={isLoading}
               />
             </>
           )}
@@ -315,7 +281,7 @@ const EditAnimalNeed = props => {
   );
 };
 
-export default EditAnimalNeed;
+export default EditCampaign;
 
 const styles = StyleSheet.create({
   view: {
@@ -343,12 +309,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderTopColor: '#c2c2c2',
     marginBottom: 10,
-  },
-  checkBox: {
-    backgroundColor: '#f2f2f2',
-  },
-  checkOther: {
-    textAlign: 'center',
   },
   imageButton: {
     textAlign: 'center',

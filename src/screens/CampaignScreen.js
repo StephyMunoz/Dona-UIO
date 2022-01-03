@@ -33,13 +33,15 @@ const CampaignScreen = props => {
     useCallback(() => {
       // db.ref('campaigns').on
 
-      db.ref(`campaigns`).on('value', snapshot => {
-        snapshot.forEach(campaign => {
-          if (campaign.val().id === id) {
-            setCampaignSelected(campaign.val());
-          }
+      db.ref(`campaigns`)
+        .limit(5)
+        .on('value', snapshot => {
+          snapshot.forEach(campaign => {
+            if (campaign.val().id === id) {
+              setCampaignSelected(campaign.val());
+            }
+          });
         });
-      });
       return () => {
         db.ref('campaigns').off();
       };

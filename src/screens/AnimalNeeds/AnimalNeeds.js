@@ -80,9 +80,6 @@ const AnimalNeeds = () => {
 
   return (
     <View style={styles.viewBody}>
-      <Text style={styles.textStyle}>
-        Listado de requerimientos de la fundación
-      </Text>
       {animalNeeds.length === 0 ? (
         <Text style={styles.textEmpty}>No existen registros aún</Text>
       ) : (

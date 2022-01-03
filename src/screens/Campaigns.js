@@ -24,6 +24,7 @@ const Campaigns = () => {
       const getCampaigns = async () => {
         db.ref(`campaigns`)
           .orderByChild('createdAt')
+          .limit(5)
           .on('value', snapshot => {
             snapshot.forEach(campaign => {
               // let key = campaign.key;

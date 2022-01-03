@@ -162,6 +162,24 @@ function FoundationNeed({foundationNeed, navigation, toastRef}) {
 
   return (
     <View style={styles.viewHumanitarianNeed}>
+      {user && user.role === 'administrator' && (
+        <View>
+          <Icon
+            name="pencil"
+            type="material-community"
+            containerStyle={styles.iconEdit}
+            size={35}
+            // onPress={handleDelete}
+          />
+          <Icon
+            name="trash-can-outline"
+            type="material-community"
+            containerStyle={styles.iconTrash}
+            size={35}
+            onPress={handleDelete}
+          />
+        </View>
+      )}
       <View style={{flexDirection: 'row'}}>
         <Avatar
           source={{uri: foundationAvatar}}
@@ -177,15 +195,6 @@ function FoundationNeed({foundationNeed, navigation, toastRef}) {
             {foundationSelected.email}
           </Text>
         </TouchableOpacity>
-        {user && user.role === 'administrator' && (
-          <Icon
-            name="trash-can-outline"
-            type="material-community"
-            containerStyle={styles.iconTrash}
-            size={35}
-            onPress={handleDelete}
-          />
-        )}
       </View>
       <Carousel arrayImages={images} height={250} width={screenWidth} />
       {user && user.role !== 'user' ? (
@@ -277,9 +286,6 @@ const styles = StyleSheet.create({
     color: 'grey',
   },
   viewHumanitarianNeed: {
-    // flexDirection: 'row',
-    // alignItems: 'center',
-    // margin: 10,
     marginBottom: 20,
   },
   title: {
@@ -328,5 +334,9 @@ const styles = StyleSheet.create({
   iconTrash: {
     position: 'absolute',
     right: 10,
+  },
+  iconEdit: {
+    position: 'absolute',
+    right: 50,
   },
 });

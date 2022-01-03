@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {
   StyleSheet,
   Text,
@@ -17,10 +17,11 @@ import imageNotFound from '../../images/no-image.png';
 import {Divider} from 'react-native-elements/dist/divider/Divider';
 import Loading from '../Loading';
 import Carousel from '../Carousel';
+import {db} from '../../firebase';
 
 const screenWidth = Dimensions.get('window').width;
 
-const ListAnimalNeeds = ({animalNeeds, isLoading}) => {
+const ListAnimalNeeds = ({animalNeeds, isLoading, toastRef}) => {
   const navigation = useNavigation();
 
   return (
@@ -28,7 +29,13 @@ const ListAnimalNeeds = ({animalNeeds, isLoading}) => {
       {size(animalNeeds) > 0 ? (
         <FlatList
           data={animalNeeds}
-          renderItem={need => <AnimalNeed animalNeed={need} />}
+          renderItem={need => (
+            <AnimalNeed
+              animalNeed={need}
+              navigation={navigation}
+              toastRef={toastRef}
+            />
+          )}
           keyExtractor={(item, index) => index.toString()}
           onEndReachedThreshold={0.5}
           // onEndReached={handleLoadMore}
@@ -45,20 +52,11 @@ const ListAnimalNeeds = ({animalNeeds, isLoading}) => {
   );
 };
 
-function AnimalNeed({animalNeed}) {
-  const {id, images, food, medicine, other, title} = animalNeed.item;
-  const imageRequirement = images ? images[0] : null;
-
-  // console.log('images', images);
-
-  const goAnimalNeed = () => {
-    console.log('image  Selected', images[0]);
-
-    // navigation.navigate('AnimalNeed', {
-    //   id,
-    //   name,
-    // });
-  };
+function AnimalNeed({animalNeed, navigation, toastRef}) {
+  const {id, images, food, medicine, other, title, createdBy, createdAt} =
+    animalNeed.item;
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadingText, setLoadingText] = useState(null);
 
   const handleEdit = () => {
     Alert.alert(
@@ -68,7 +66,18 @@ function AnimalNeed({animalNeed}) {
     );
   };
 
-  const handleEditNeed = () => {};
+  const handleEditNeed = () => {
+    navigation.navigate('edit_animal_need', {
+      id,
+      images,
+      food,
+      medicine,
+      other,
+      title,
+      createdBy,
+      createdAt,
+    });
+  };
 
   const handleDelete = () => {
     Alert.alert(
@@ -81,7 +90,45 @@ function AnimalNeed({animalNeed}) {
     );
   };
 
-  const handleDeletePublication = () => {};
+  const handleDeletePublication = () => {
+    setIsLoading(true);
+    setLoadingText('Eliminando requerimiento');
+    let needFoundationKey = '';
+    db.ref('foundations').on('value', snapshot => {
+      snapshot.forEach(needItem => {
+        if (
+          needItem.val().createdBy === createdBy &&
+          needItem.val().id === id
+        ) {
+          needFoundationKey = needItem.key;
+        }
+      });
+    });
+
+    try {
+      db.ref(`foundations/${needFoundationKey}`)
+        .remove()
+        .then(() => {
+          setIsLoading(false);
+          toastRef.current.show('Publicación eliminada exitosamente');
+        })
+        .catch(() => {
+          setIsLoading(false);
+          toastRef.current.show(
+            'Ha ocurrido un error, por favor intente nuevamente más tarde',
+          );
+        });
+    } catch (e) {
+      setIsLoading(false);
+      toastRef.current.show(
+        'Ha ocurrido un error, por favor intente nuevamente más tarde',
+      );
+    }
+
+    return () => {
+      db.ref('foundations').off();
+    };
+  };
 
   return (
     <View>
@@ -127,6 +174,7 @@ function AnimalNeed({animalNeed}) {
         )}
         <Divider style={styles.divider} />
       </View>
+      <Loading isVisible={isLoading} text={loadingText} />
     </View>
   );
 }

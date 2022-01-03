@@ -1,13 +1,15 @@
-import React, {useCallback, useState} from 'react';
+import React, {useCallback, useRef, useState} from 'react';
 import {View, ScrollView, StyleSheet, Text} from 'react-native';
 import {useFocusEffect} from '@react-navigation/native';
 import {useNavigation} from '@react-navigation/native';
 import {Icon} from 'react-native-elements';
 import {auth, db} from '../firebase';
 import ListAnimalCampaigns from '../components/campaigns/ListAnimalCampaigns';
+import Toast from 'react-native-easy-toast';
 
 const AnimalCareCampaigns = () => {
   const navigation = useNavigation();
+  const {toastRef} = useRef();
   const [animalCampaigns, setAnimalCampaigns] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -34,7 +36,6 @@ const AnimalCareCampaigns = () => {
 
   return (
     <View style={styles.viewBody}>
-      <Text style={styles.textStyle}>Listado de campañas de la fundación</Text>
       {animalCampaigns.length === 0 ? (
         <Text style={styles.textEmpty}>No existen registros aún</Text>
       ) : (
@@ -42,6 +43,7 @@ const AnimalCareCampaigns = () => {
           animalCampaigns={animalCampaigns}
           // handleLoadMore={handleLoadMore}
           isLoading={isLoading}
+          toastRef={toastRef}
         />
       )}
 
@@ -53,6 +55,7 @@ const AnimalCareCampaigns = () => {
         containerStyle={styles.btnContainer}
         onPress={() => navigation.navigate('form_animal_campaign')}
       />
+      <Toast ref={toastRef} position="center" opacity={0.9} />
     </View>
   );
 };

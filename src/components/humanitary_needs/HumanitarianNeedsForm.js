@@ -173,7 +173,6 @@ const HumanitarianNeedsForm = () => {
             isValid,
           }) => (
             <>
-              <Text style={styles.textStyle}>Registro de necesidades: </Text>
               <Input
                 name="title"
                 placeholder="Ingresa un título adecuado"

@@ -64,58 +64,43 @@ const FoundationInformation = props => {
     <ScrollView>
       <View style={styles.viewBody}>
         <View style={styles.viewCampaignTitle}>
-          {user && user.role === 'administrator' ? (
-            <Avatar
-              size={100}
-              rounded
-              containerStyle={styles.avatar}
-              source={{uri: image}}
-              onPress={changeAvatar}
-              // containerStyle={{backgroundColor: 'grey'}}
-            >
-              <Avatar.Accessory size={23} />
-            </Avatar>
-          ) : (
-            <Avatar
-              source={{uri: image}}
-              rounded
-              containerStyle={styles.avatar}
-              size={100}
-              icon={{name: 'adb', type: 'material'}}
-            />
-          )}
+          {/*{user && user.role === 'administrator' ? (*/}
+          {/*  <Avatar*/}
+          {/*    size={100}*/}
+          {/*    rounded*/}
+          {/*    containerStyle={styles.avatar}*/}
+          {/*    source={{uri: image}}*/}
+          {/*    onPress={changeAvatar}*/}
+          {/*    // containerStyle={{backgroundColor: 'grey'}}*/}
+          {/*  >*/}
+          {/*    <Avatar.Accessory size={23} />*/}
+          {/*  </Avatar>*/}
+          {/*) : (*/}
+          <Avatar
+            source={{uri: image}}
+            rounded
+            containerStyle={styles.avatar}
+            size={100}
+            icon={{name: 'adb', type: 'material'}}
+          />
 
           <View>
-            {user && user.role === 'administrator' ? (
-              <View style={{flexDirection: 'row'}}>
-                <Text style={styles.foundation}>
-                  {name}
-                  {'  '}
-                </Text>
-                <Icon name="edit" onPress={openModal} />
-                <ChangeDisplayNameForm
-                  isVisible={showModal}
-                  setIsVisible={setShowModal}
-                />
-              </View>
-            ) : (
-              <Text style={styles.foundation}>{name}</Text>
-            )}
-            {user && user.role === 'administrator' ? (
-              <View style={{flexDirection: 'row'}}>
-                <Text style={styles.descriptionCampaign}>
-                  {email}
-                  {'  '}
-                </Text>
-                <Icon name="edit" color="#c2c2c2" onPress={openModalEmail} />
-                <ChangeEmailForm
-                  isVisible={showModalEmail}
-                  setIsVisible={setShowModalEmail}
-                />
-              </View>
-            ) : (
-              <Text style={styles.descriptionCampaign}>{email}</Text>
-            )}
+            {/*{user && user.role === 'administrator' ? (*/}
+            {/*  <View style={{flexDirection: 'row'}}>*/}
+            {/*    <Text style={styles.foundation}>*/}
+            {/*      {name}*/}
+            {/*      {'  '}*/}
+            {/*    </Text>*/}
+            {/*    <Icon name="edit" onPress={openModal} />*/}
+            {/*    <ChangeDisplayNameForm*/}
+            {/*      isVisible={showModal}*/}
+            {/*      setIsVisible={setShowModal}*/}
+            {/*    />*/}
+            {/*  </View>*/}
+            {/*) : (*/}
+            <Text style={styles.foundation}>{name}</Text>
+
+            <Text style={styles.descriptionCampaign}>{email}</Text>
           </View>
         </View>
         {foundation ? (

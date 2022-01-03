@@ -8,9 +8,11 @@ import ChangeDisplayNameForm from '../components/account/ChangeDisplayNameForm';
 import ChangeEmailForm from '../components/account/ChangeEmailForm';
 import {map} from 'lodash';
 import Map from '../components/Map';
+import {useNavigation} from '@react-navigation/native';
 
 const FoundationView = () => {
   const {user} = useAuth();
+  const navigation = useNavigation();
   const [foundationPhone, setFoundationPhone] = useState([]);
   const [avatar, setAvatar] = useState(null);
 
@@ -45,6 +47,16 @@ const FoundationView = () => {
     Alert.alert(
       '¿Cómo me ven los usuarios de Dona-UIO',
       'Esta pantalla muestra cómo ven los usuarios tu perfil, para modificarlo dirígete a tu perfil',
+      [
+        {
+          text: 'Entendido',
+          style: 'cancel',
+        },
+        {
+          text: 'Ir a perfil',
+          onPress: () => navigation.navigate('profile'),
+        },
+      ],
     );
   };
 

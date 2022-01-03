@@ -22,6 +22,7 @@ const Home = () => {
         await db
           .ref('foundations')
           .orderByChild('createdAt')
+          .limit(5)
           .on('value', snapshot => {
             snapshot.forEach(need => {
               const q = need.val();
