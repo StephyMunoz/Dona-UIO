@@ -1,8 +1,7 @@
 import React, {useCallback, useRef, useState} from 'react';
-import {View, ScrollView, StyleSheet, Text} from 'react-native';
+import {StyleSheet, Text, View} from 'react-native';
 import Toast from 'react-native-easy-toast';
-import {useFocusEffect} from '@react-navigation/native';
-import {useNavigation} from '@react-navigation/native';
+import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {Icon} from 'react-native-elements';
 import {auth, db} from '../../firebase';
 import ListAnimalNeeds from '../../components/animalNeeds/ListAnimalNeeds';
@@ -21,7 +20,8 @@ const AnimalNeeds = () => {
       const resultAnimalNeeds = [];
 
       db.ref('foundations')
-        .orderByChild('createdAt')
+        .orderByChild('updatedAt')
+        .limitToLast(5)
         .on('value', snapshot => {
           snapshot.forEach(need => {
             const q = need.val();

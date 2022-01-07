@@ -1,29 +1,16 @@
 import React, {useEffect, useState} from 'react';
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import {useNavigation} from '@react-navigation/native';
-import {Avatar, ListItem, Icon} from 'react-native-elements';
+import {Linking, ScrollView, StyleSheet, Text, View} from 'react-native';
+import {Avatar, Icon, ListItem, SocialIcon} from 'react-native-elements';
 import {db} from '../firebase';
 import Loading from '../components/Loading';
 import Map from '../components/Map';
 import {map} from 'lodash';
-import {useAuth} from '../lib/auth';
-import ChangeDisplayNameForm from '../components/account/ChangeDisplayNameForm';
-import ChangeEmailForm from '../components/account/ChangeEmailForm';
 
 const FoundationInformation = props => {
   const {navigation, route} = props;
   const {id, name, image, email} = route.params;
-  const {user} = useAuth();
   const [foundationPhone, setFoundationPhone] = useState([]);
   const [foundation, setFoundation] = useState(null);
-  const [showModal, setShowModal] = useState(false);
-  const [showModalEmail, setShowModalEmail] = useState(false);
 
   useEffect(() => {
     navigation.setOptions({title: name});
@@ -50,32 +37,19 @@ const FoundationInformation = props => {
   if (!foundation || !foundationPhone) {
     return <Loading setVisible={true} text="Cargando información" />;
   }
-  const openModal = () => {
-    setShowModal(!showModal);
+
+  const handleWhatsAppPress = async number => {
+    await Linking.openURL(`https://wa.me/+593${number}`);
   };
-  const openModalEmail = () => {
-    setShowModalEmail(!showModalEmail);
-  };
-  const changeAvatar = () => {
-    setShowModalEmail(!showModalEmail);
+
+  const handleCallPress = async number => {
+    await Linking.openURL(`tel:0${number}`);
   };
 
   return (
     <ScrollView>
       <View style={styles.viewBody}>
         <View style={styles.viewCampaignTitle}>
-          {/*{user && user.role === 'administrator' ? (*/}
-          {/*  <Avatar*/}
-          {/*    size={100}*/}
-          {/*    rounded*/}
-          {/*    containerStyle={styles.avatar}*/}
-          {/*    source={{uri: image}}*/}
-          {/*    onPress={changeAvatar}*/}
-          {/*    // containerStyle={{backgroundColor: 'grey'}}*/}
-          {/*  >*/}
-          {/*    <Avatar.Accessory size={23} />*/}
-          {/*  </Avatar>*/}
-          {/*) : (*/}
           <Avatar
             source={{uri: image}}
             rounded
@@ -85,19 +59,6 @@ const FoundationInformation = props => {
           />
 
           <View>
-            {/*{user && user.role === 'administrator' ? (*/}
-            {/*  <View style={{flexDirection: 'row'}}>*/}
-            {/*    <Text style={styles.foundation}>*/}
-            {/*      {name}*/}
-            {/*      {'  '}*/}
-            {/*    </Text>*/}
-            {/*    <Icon name="edit" onPress={openModal} />*/}
-            {/*    <ChangeDisplayNameForm*/}
-            {/*      isVisible={showModal}*/}
-            {/*      setIsVisible={setShowModal}*/}
-            {/*    />*/}
-            {/*  </View>*/}
-            {/*) : (*/}
             <Text style={styles.foundation}>{name}</Text>
 
             <Text style={styles.descriptionCampaign}>{email}</Text>
@@ -126,9 +87,22 @@ const FoundationInformation = props => {
             <Text style={styles.contactTitle}>Teléfonos de contacto</Text>
             {map(foundationPhone, (item, index) => (
               <ListItem key={index} containerStyle={styles.containerListItem}>
-                <Icon name="phone" type="material-community" color="#00a680" />
+                <Icon
+                  name="phone"
+                  reverse
+                  type="material-community"
+                  color="#00a680"
+                  onPress={() => handleCallPress(item)}
+                />
+                {item.length === 9 && (
+                  <SocialIcon
+                    type="whatsapp"
+                    onPress={() => handleWhatsAppPress(item)}
+                    style={styles.whatsappIcon}
+                  />
+                )}
                 <ListItem.Content>
-                  <ListItem.Title>{item}</ListItem.Title>
+                  <ListItem.Title>0{item}</ListItem.Title>
                 </ListItem.Content>
               </ListItem>
             ))}
@@ -155,11 +129,15 @@ function FoundationLocation(props) {
     },
     {
       text: email,
-      iconName: 'at',
+      iconName: 'email',
       iconType: 'material-community',
-      action: null,
+      action: () => handleEmailPress(email),
     },
   ];
+
+  const handleEmailPress = async emailChosen => {
+    await Linking.openURL(`mailto:${emailChosen}`);
+  };
 
   return (
     <View style={styles.viewFoundationInfo}>
@@ -167,7 +145,12 @@ function FoundationLocation(props) {
 
       {map(listInfo, (item, index) => (
         <ListItem key={index} containerStyle={styles.containerListItem}>
-          <Icon name={item.iconName} type={item.iconType} color="#00a680" />
+          <Icon
+            name={item.iconName}
+            type={item.iconType}
+            color="#00a680"
+            onPress={item.action}
+          />
           <ListItem.Content>
             <ListItem.Title>{item.text}</ListItem.Title>
           </ListItem.Content>
@@ -185,6 +168,9 @@ const styles = StyleSheet.create({
   viewCampaignTitle: {
     padding: 15,
     flexDirection: 'row',
+  },
+  whatsappIcon: {
+    backgroundColor: '#00a680',
   },
   nameCampaign: {
     fontSize: 20,

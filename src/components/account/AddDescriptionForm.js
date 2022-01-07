@@ -1,12 +1,10 @@
-import React, {useEffect, useState} from 'react';
+import React, {useState} from 'react';
 import {Alert, StyleSheet, Text, TextInput, View} from 'react-native';
-import {Input, Button, Icon} from 'react-native-elements';
+import {Button, Icon} from 'react-native-elements';
 import {Formik} from 'formik';
 import * as yup from 'yup';
-import {auth, db} from '../../firebase';
+import {db} from '../../firebase';
 import {useAuth} from '../../lib/auth';
-import Loading from '../Loading';
-import AccountOptions from './AccountOptions';
 import Modal from '../Modal';
 
 export default function AddDescriptionForm({isVisible, setIsVisible}) {

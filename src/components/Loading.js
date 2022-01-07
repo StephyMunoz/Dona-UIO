@@ -1,5 +1,5 @@
 import React from 'react';
-import {StyleSheet, View, Text, ActivityIndicator} from 'react-native';
+import {ActivityIndicator, StyleSheet, Text, View} from 'react-native';
 import {Overlay} from 'react-native-elements';
 
 const Loading = props => {

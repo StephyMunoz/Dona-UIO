@@ -1,7 +1,6 @@
 import React, {useRef, useState} from 'react';
 import {
   Alert,
-  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -9,20 +8,13 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import {
-  Button,
-  Input,
-  Button as ButtonElements,
-  Icon,
-  Avatar,
-} from 'react-native-elements';
+import {Avatar, Button, Icon, Input} from 'react-native-elements';
 import {Formik} from 'formik';
-import {auth, storage, db} from '../../firebase';
+import {db, storage} from '../../firebase';
 import * as yup from 'yup';
 import {launchImageLibrary} from 'react-native-image-picker';
-import {map, size, filter} from 'lodash';
+import {filter, map, size} from 'lodash';
 import {useAuth} from '../../lib/auth';
-import {Dropdown} from 'react-native-material-dropdown';
 import Loading from '../Loading';
 import uuid from 'random-uuid-v4';
 import {useNavigation} from '@react-navigation/native';
@@ -69,6 +61,7 @@ const AnimalNeedsForm = () => {
             .push()
             .set({
               createdAt: new Date().getTime(),
+              updatedAt: new Date().getTime(),
               title: data.title,
               food: data.food,
               medicine: data.medicine,

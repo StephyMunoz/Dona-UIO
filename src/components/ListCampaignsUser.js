@@ -1,35 +1,27 @@
-import React, {useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  FlatList,
   StyleSheet,
   Text,
-  View,
-  FlatList,
-  ActivityIndicator,
   TouchableOpacity,
-  Image,
-  ScrollView,
-  Dimensions,
-  Alert,
+  View,
 } from 'react-native';
-import {
-  Avatar,
-  Divider,
-  Icon,
-  Image as ImageElements,
-} from 'react-native-elements';
+import {useFocusEffect, useNavigation} from '@react-navigation/native';
+import {Avatar, Divider, Icon} from 'react-native-elements';
 import {size} from 'lodash';
-import {useNavigation} from '@react-navigation/native';
-import imageNotFound from '../images/no-image.png';
 import Carousel from '../components/Carousel';
 import {db, storage} from '../firebase';
 import {useAuth} from '../lib/auth';
 import Loading from './Loading';
-// import {Divider} from 'react-native-elements/dist/divider/Divider';
 
 const screenWidth = Dimensions.get('window').width;
 
 const ListCampaignsUser = ({animalCampaigns, isLoading, toastRef}) => {
   const navigation = useNavigation();
+  const [reloadData, setReloadData] = useState(false);
 
   return (
     <View>
@@ -59,21 +51,42 @@ const ListCampaignsUser = ({animalCampaigns, isLoading, toastRef}) => {
 };
 
 function AnimalCampaign({animalCampaign, navigation, toastRef}) {
-  const {id, images, campaignDescription, other, title, createdBy, createdAt} =
-    animalCampaign.item;
+  const {
+    id,
+    images,
+    campaignDescription,
+    other,
+    title,
+    createdBy,
+    createdAt,
+    updatedAt,
+  } = animalCampaign.item;
   const [foundation, setFoundation] = useState(null);
   const [avatar, setAvatar] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingText, setLoadingText] = useState(null);
+  const [favorite, setFavorite] = useState(false);
   const {user} = useAuth();
-  // console.log(animalCampaign);
+  useFocusEffect(
+    useCallback(() => {
+      if (user) {
+        db.ref('favorites').on('value', snapshot => {
+          snapshot.forEach(fav => {
+            const q = fav.val();
+            if (q.idFoundation === createdBy) {
+              if (q.idUser === user.uid) {
+                setFavorite(true);
+              }
+            }
+          });
+        });
+      }
 
-  const goAnimalCampaign = () => {
-    navigation.navigate('campaign_screen', {
-      id,
-      title,
-    });
-  };
+      return () => {
+        db.ref('favorites').off();
+      };
+    }, [favorite, createdBy, user]),
+  );
 
   useEffect(() => {
     db.ref(`users/${createdBy}`).on('value', snapshot => {
@@ -90,9 +103,6 @@ function AnimalCampaign({animalCampaign, navigation, toastRef}) {
         console.log('Error al descargar avatar');
       });
 
-    // db.ref(`users/${foundationNeed.item.createdBy}`).on('value', snapshot => {
-    //   setInfoFoundation(snapshot.val());
-    // });
     return () => {
       db.ref(`users/${createdBy}`).off();
     };
@@ -101,6 +111,55 @@ function AnimalCampaign({animalCampaign, navigation, toastRef}) {
   if (!foundation || !avatar) {
     return <Loading isVisible={true} text="Cargando información" />;
   }
+
+  const addFavorite = () => {
+    if (!user) {
+      toastRef.current.show(
+        'Para usar el sistema de favoritos tienes que estar logeado',
+      );
+    } else if (user && user.role === 'user') {
+      const payload = {
+        idUser: user.uid,
+        idFoundation: createdBy,
+      };
+      db.ref('favorites')
+        .push()
+        .set(payload)
+        .then(() => {
+          setFavorite(true);
+          toastRef.current.show('Fundación añadida a favoritos');
+        })
+        .catch(() => {
+          toastRef.current.show('Error al añadir la fundación a favoritos');
+        });
+    }
+    db.ref('favorites').off();
+  };
+
+  const removeFavorite = () => {
+    let idRemove = '';
+    db.ref('favorites').on('value', snapshot => {
+      snapshot.forEach(fav => {
+        const q = fav.val();
+        if (q.idFoundation === createdBy) {
+          if (q.idUser === user.uid) {
+            idRemove = fav.key;
+          }
+        }
+      });
+    });
+
+    db.ref(`favorites/${idRemove}`)
+      .remove()
+      .then(() => {
+        setFavorite(false);
+        toastRef.current.show('Fundación eliminada de favoritos');
+      })
+      .catch(() => {
+        toastRef.current.show('Error al eliminar el restaurante de favoritos');
+      });
+    db.ref('favorites').off();
+  };
 
   const handleNavigation = () => {
     navigation.navigate('foundation_screen', {
@@ -136,7 +195,7 @@ function AnimalCampaign({animalCampaign, navigation, toastRef}) {
         .remove()
         .then(() => {
           setIsLoading(false);
-          toastRef.current.show('Publicación eliminada correctamente');
+          toastRef.current.show('Campaña eliminada correctamente');
         })
         .catch(() => {
           setIsLoading(false);
@@ -178,6 +237,18 @@ function AnimalCampaign({animalCampaign, navigation, toastRef}) {
 
   return (
     <View style={styles.viewAnimalCampaign}>
+      <View style={styles.viewFavorite}>
+        {(!user || user.role === 'user') && (
+          <Icon
+            type="material-community"
+            name={favorite ? 'heart' : 'heart-outline'}
+            onPress={favorite ? removeFavorite : addFavorite}
+            color={favorite ? '#f00' : '#000'}
+            size={35}
+            underlayColor="transparent"
+          />
+        )}
+      </View>
       {user && user.role === 'administrator' && (
         <View>
           <Icon
@@ -212,9 +283,13 @@ function AnimalCampaign({animalCampaign, navigation, toastRef}) {
       </View>
 
       <Carousel arrayImages={images} height={200} width={screenWidth} />
-      <TouchableOpacity onPress={goAnimalCampaign}>
-        <Text style={styles.title}>{title}</Text>
-      </TouchableOpacity>
+      <Text>
+        Publicado:{'  '}
+        {new Date(updatedAt).getDate()}/{new Date(updatedAt).getMonth() + 1}/
+        {new Date(updatedAt).getFullYear()} {new Date(updatedAt).getHours()}:
+        {new Date(updatedAt).getMinutes()}
+      </Text>
+      <Text style={styles.title}>{title}</Text>
       <View>
         <Text style={styles.requirements}>Descripción: </Text>
         <Text style={styles.requirementsText}>{campaignDescription}</Text>
@@ -256,14 +331,20 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 10,
   },
-  viewAnimalCampaign: {},
+  viewFavorite: {
+    position: 'absolute',
+    top: 5,
+    right: 10,
+    zIndex: 2,
+    backgroundColor: '#fff',
+    padding: 5,
+    paddingLeft: 15,
+  },
   title: {
     fontSize: 20,
     color: '#000',
-    // textAlign: 'center',
     marginBottom: 10,
     fontWeight: 'bold',
-    margin: 20,
   },
   viewAnimalCampaignImage: {
     marginRight: 15,
@@ -283,16 +364,14 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   requirements: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
     textAlign: 'justify',
-    marginLeft: 20,
     marginTop: 10,
   },
   requirementsText: {
     fontSize: 18,
     textAlign: 'justify',
-    marginLeft: 20,
   },
   notFoundAnimalCampaigns: {
     marginTop: 10,

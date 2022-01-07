@@ -24,27 +24,30 @@ const EditAnimalNeed = props => {
   // /const {routes} = props.params;
   const {id, images, food, medicine, other, title, createdAt, createdBy} =
     props.route.params;
-  const {user} = useAuth();
   const toastRef = useRef();
+  const {user} = useAuth();
   const navigation = useNavigation();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [imagesSelected, setImagesSelected] = useState([...images]);
   const [loadingText, setLoadingText] = useState(false);
   const [getKey, setGetKey] = useState(null);
-  console.log('id', id);
 
   useEffect(() => {
     db.ref('foundations').on('value', snapshot => {
       snapshot.forEach(needItem => {
-        if (needItem.val().id === id) {
+        if (
+          needItem.val().createdBy === createdBy &&
+          needItem.val().id === id
+        ) {
           setGetKey(needItem.key);
         }
       });
     });
-  }, [id]);
+  }, [id, createdBy]);
 
-  console.log('props', getKey);
+  if (!getKey) {
+    return <Loading isVisible={true} text="Cargando" />;
+  }
 
   const schema = yup.object().shape({
     title: yup.string().required('Ingrese un título adecuado'),
@@ -68,10 +71,9 @@ const EditAnimalNeed = props => {
       toastRef.current.show('Seleccione al menos imagen para poder continuar');
     } else {
       setLoading(true);
-      setError(null);
       try {
         setLoading(true);
-        setLoadingText('Guardando información');
+        setLoadingText('Actualizando información');
         await uploadImageStorage().then(response => {
           db.ref(`foundations/${getKey}`)
             .set({
@@ -87,7 +89,11 @@ const EditAnimalNeed = props => {
             })
             .then(() => {
               setLoading(false);
-              navigation.navigate('animal_needs');
+              if (user.role === 'administrator') {
+                navigation.navigate('home');
+              } else {
+                navigation.navigate('animal_needs');
+              }
             })
             .catch(e => {
               setLoading(false);
@@ -106,9 +112,9 @@ const EditAnimalNeed = props => {
   const handleLaunchCamera = async () => {
     await launchImageLibrary(options, response => {
       if (response.didCancel) {
-        toastRef.current.show('Selección de imagen cancelada');
+        toastRef.current.show('Elección de imagen cancelada');
       } else if (response.errorCode) {
-        toastRef.current.show('Ocurrio un error, intente más tarde');
+        toastRef.current.show('Ocurrio un error, por favor intente más tarde');
       } else {
         setImagesSelected([...imagesSelected, response.assets[0].uri]);
       }
@@ -140,11 +146,10 @@ const EditAnimalNeed = props => {
   const removeImage = image => {
     Alert.alert(
       'Eliminar Imagen',
-      '¿Estas seguro de que quieres eliminar la imagen seleccionada?',
+      '¿Estas segur@ de que quieres eliminar la imagen seleccionada?',
       [
         {
-          text: 'Cancel',
-          style: 'cancel',
+          text: 'Cancelar',
         },
         {
           text: 'Eliminar',
@@ -188,7 +193,6 @@ const EditAnimalNeed = props => {
                 onChangeText={handleChange('title')}
                 onBlur={handleBlur('title')}
                 value={values.title}
-                errorMessage={error}
                 rightIcon={
                   <Icon
                     type="font-awesome"
@@ -210,7 +214,6 @@ const EditAnimalNeed = props => {
                   onChangeText={handleChange('food')}
                   onBlur={handleBlur('food')}
                   value={values.food}
-                  errorMessage={error}
                   editable
                   multiline
                   numberOfLines={3}
@@ -242,7 +245,6 @@ const EditAnimalNeed = props => {
                   onChangeText={handleChange('medicine')}
                   onBlur={handleBlur('medicine')}
                   value={values.medicine}
-                  errorMessage={error}
                   editable
                   multiline
                   numberOfLines={4}
@@ -261,7 +263,6 @@ const EditAnimalNeed = props => {
                   onChangeText={handleChange('other')}
                   onBlur={handleBlur('other')}
                   value={values.other}
-                  errorMessage={error}
                   editable
                   multiline
                   numberOfLines={3}
@@ -300,8 +301,8 @@ const EditAnimalNeed = props => {
               </View>
               <Button
                 onPress={handleSubmit}
-                title="Ingresar requerimiento"
-                // disabled={!isValid}
+                title="Actualizar requerimiento"
+                disabled={!isValid}
                 containerStyle={styles.btnContainerLogin}
                 // loading={isLoading}
               />

@@ -1,11 +1,9 @@
 import React, {useCallback, useRef, useState} from 'react';
-import {View, ScrollView, StyleSheet, Text} from 'react-native';
-import {useFocusEffect} from '@react-navigation/native';
-import {useNavigation} from '@react-navigation/native';
+import {StyleSheet, Text, View} from 'react-native';
+import {useFocusEffect, useNavigation} from '@react-navigation/native';
 
 import {Icon} from 'react-native-elements';
-import {auth, db} from '../firebase';
-import ListAnimalCampaigns from '../components/campaigns/ListAnimalCampaigns';
+import {db} from '../firebase';
 import ListCampaignsUser from '../components/ListCampaignsUser';
 import Toast from 'react-native-easy-toast';
 import {useAuth} from '../lib/auth';
@@ -23,8 +21,8 @@ const Campaigns = () => {
 
       const getCampaigns = async () => {
         db.ref(`campaigns`)
-          .orderByChild('createdAt')
-          .limit(5)
+          .orderByChild('updatedAt')
+          .limitToFirst(3)
           .on('value', snapshot => {
             snapshot.forEach(campaign => {
               // let key = campaign.key;

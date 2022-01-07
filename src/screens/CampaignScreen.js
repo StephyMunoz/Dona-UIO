@@ -1,18 +1,17 @@
 import React, {useCallback, useEffect, useState} from 'react';
 import {
-  ScrollView,
-  Text,
-  View,
-  StyleSheet,
   Dimensions,
+  ScrollView,
+  StyleSheet,
+  Text,
   TouchableOpacity,
+  View,
 } from 'react-native';
 import {db, storage} from '../firebase';
-import {useFocusEffect} from '@react-navigation/native';
+import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import Loading from '../components/Loading';
 import Carousel from '../components/Carousel';
 import {Avatar} from 'react-native-elements';
-import {useNavigation} from '@react-navigation/native';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -34,7 +33,7 @@ const CampaignScreen = props => {
       // db.ref('campaigns').on
 
       db.ref(`campaigns`)
-        .limit(5)
+        .limitToLast(5)
         .on('value', snapshot => {
           snapshot.forEach(campaign => {
             if (campaign.val().id === id) {
@@ -76,8 +75,9 @@ const CampaignScreen = props => {
     };
   }, [campaignSelected]);
 
-  if (!campaignSelected)
-    return <Loading isVisible={true} text="Cargando información" />;
+  if (!campaignSelected) {
+    return <Loading isVisible={true} />;
+  }
 
   return (
     <ScrollView vertical style={styles.viewBody}>

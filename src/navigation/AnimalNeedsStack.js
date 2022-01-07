@@ -1,11 +1,7 @@
 import React from 'react';
 import {createStackNavigator} from '@react-navigation/stack';
-import Account from '../screens/Login/index';
-import Login from '../screens/Login/Login';
-import Register from '../screens/Login/Register';
 import AnimalNeeds from '../screens/AnimalNeeds/AnimalNeeds';
 import AnimalNeedsForm from '../components/animalNeeds/AnimalNeedsForm';
-import AnimalCampaignForm from '../components/campaigns/AnimalCampaignForm';
 import EditAnimalNeed from '../components/EditAnimalNeed';
 
 const Stack = createStackNavigator();

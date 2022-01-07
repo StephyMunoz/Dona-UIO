@@ -1,19 +1,16 @@
 import React, {useState} from 'react';
 import {
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  FlatList,
   StyleSheet,
   Text,
   View,
-  FlatList,
-  ActivityIndicator,
-  TouchableOpacity,
-  Image,
-  Dimensions,
-  Alert,
 } from 'react-native';
-import {Avatar, Icon, Image as ImageElements} from 'react-native-elements';
+import {Icon} from 'react-native-elements';
 import {size} from 'lodash';
 import {useNavigation} from '@react-navigation/native';
-import imageNotFound from '../../images/no-image.png';
 import {Divider} from 'react-native-elements/dist/divider/Divider';
 import Carousel from '../Carousel';
 import {db} from '../../firebase';

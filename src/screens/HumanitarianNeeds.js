@@ -1,7 +1,6 @@
 import React, {useCallback, useRef, useState} from 'react';
-import {View, ScrollView, StyleSheet, Text} from 'react-native';
-import {useFocusEffect} from '@react-navigation/native';
-import {useNavigation} from '@react-navigation/native';
+import {StyleSheet, Text, View} from 'react-native';
+import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {Icon} from 'react-native-elements';
 import Toast from 'react-native-easy-toast';
 import {auth, db} from '../firebase';
@@ -22,7 +21,8 @@ const HumanitarianNeeds = () => {
       const getRequirements = async () => {
         await db
           .ref('foundations')
-          .orderByChild('createdAt')
+          .orderByChild('updatedAt')
+          .limitToFirst(5)
           .on('value', snapshot => {
             snapshot.forEach(need => {
               const q = need.val();

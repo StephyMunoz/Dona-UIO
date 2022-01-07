@@ -1,29 +1,34 @@
-import React, {useEffect, useState} from 'react';
-import {ScrollView, StyleSheet, Text, View} from 'react-native';
-import avatarImage from '../../images/character_icons_7.png';
-import {Avatar, Button, Icon, Input, ListItem} from 'react-native-elements';
+import React, {useEffect, useRef, useState} from 'react';
+import {
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import avatarImage from '../../images/avatar-default.jpg';
+import {Avatar, Button, Icon, ListItem} from 'react-native-elements';
 import {useAuth} from '../../lib/auth';
-import Modal from '../Modal';
 import ChangeDisplayNameForm from './ChangeDisplayNameForm';
-import * as yup from 'yup';
 import {auth, db, storage} from '../../firebase';
-import {Formik} from 'formik';
 import ChangeEmailForm from './ChangeEmailForm';
 import ChangePasswordForm from './ChangePasswordForm';
-import ContactForm from './ContactForm';
 import {launchImageLibrary} from 'react-native-image-picker';
+import Loading from '../Loading';
+import Toast from 'react-native-easy-toast';
+import {useNavigation} from '@react-navigation/native';
 
 const ProfileOptions = () => {
   const {user, logout} = useAuth();
+  const toastRef = useRef();
+  const navigation = useNavigation();
   const [showModal, setShowModal] = useState(false);
   const [showModalEmail, setShowModalEmail] = useState(false);
   const [showModalPassword, setShowModalPassword] = useState(false);
-  const [showModalContact, setShowModalContact] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const [expandedContact, setExpandedContact] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [change, setChange] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -100,21 +105,43 @@ const ProfileOptions = () => {
     setShowModalPassword(true);
   };
 
+  const handleConfirmation = () => {
+    Alert.alert(
+      'Reenviar correro de verficación',
+      'Se reenviará el código de verificación, por favor revise su Correo No Deseado',
+      [{text: 'Cancelar'}, {text: 'Reenviar email', onPress: handleSendEmail}],
+    );
+  };
+
+  const handleSendEmail = async () => {
+    console.log('helo', auth.currentUser);
+    await auth.currentUser
+      .sendEmailVerification()
+      .then(
+        toastRef.current.show(
+          'Se ha reenviado un email de verificación a tu correo electrónico',
+        ),
+        setLoading(false),
+        navigation.navigate('home'),
+      );
+  };
+
   return (
     <ScrollView>
       <View style={styles.viewUserInfo}>
         <Avatar
           rounded
           size="xlarge"
-          showEditButton={true}
           onPress={changeAvatar}
+          icon={{name: 'adb', type: 'material', onPress: {changeAvatar}}}
           containerStyle={styles.userInfoAvatar}
           source={
             auth.currentUser.photoURL
               ? {uri: auth.currentUser.photoURL}
               : avatarImage
-          }
-        />
+          }>
+          <Avatar.Accessory size={35} />
+        </Avatar>
         <View style={styles.textStyle}>
           <Text style={styles.displayName}>
             {auth.currentUser.displayName
@@ -131,6 +158,18 @@ const ProfileOptions = () => {
         </View>
       </View>
       <View>
+        {user.emailVerified === false && (
+          <TouchableOpacity onPress={handleConfirmation}>
+            <ListItem bottomDivider contarinerStyle={styles.view}>
+              <Icon name="email" size={40} style={styles.iconStyle} />
+              <ListItem.Content>
+                <ListItem.Title>Cuenta no verificada</ListItem.Title>
+                <ListItem.Subtitle>Reenviar correo</ListItem.Subtitle>
+              </ListItem.Content>
+            </ListItem>
+          </TouchableOpacity>
+        )}
+
         <ListItem.Accordion
           content={
             <>
@@ -201,6 +240,8 @@ const ProfileOptions = () => {
         {/*  setIsVisible={setShowModal}*/}
         {/*/>*/}
       </View>
+      <Loading isVisible={loading} />
+      <Toast ref={toastRef} position="center" opacity={0.9} />
     </ScrollView>
   );
 };

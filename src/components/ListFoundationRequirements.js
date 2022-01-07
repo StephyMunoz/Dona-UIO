@@ -1,24 +1,22 @@
-import React, {useCallback, useEffect, useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  FlatList,
   StyleSheet,
   Text,
-  View,
-  FlatList,
-  ActivityIndicator,
   TouchableOpacity,
-  Image,
-  Dimensions,
-  Alert,
+  View,
 } from 'react-native';
-import {Avatar, Icon, Image as ImageElements} from 'react-native-elements';
+import {Avatar, Icon} from 'react-native-elements';
 import {size} from 'lodash';
-import {useFocusEffect, useNavigation} from '@react-navigation/native';
-import imageNotFound from '../images/no-image.png';
+import {useNavigation} from '@react-navigation/native';
 import {Divider} from 'react-native-elements/dist/divider/Divider';
-import Loading from '../components/Loading';
 import {db, storage} from '../firebase';
 import Carousel from '../components/Carousel';
 import {useAuth} from '../lib/auth';
+import avatarDefault from '../images/avatar-default.jpg';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -26,6 +24,7 @@ const ListFoundationRequirements = ({
   foundationsNeeds,
   isLoading,
   toastRef,
+  handleLoadMore,
 }) => {
   const navigation = useNavigation();
 
@@ -43,14 +42,14 @@ const ListFoundationRequirements = ({
           )}
           keyExtractor={(item, index) => index.toString()}
           onEndReachedThreshold={0.5}
-          // onEndReached={handleLoadMore}
+          onEndReached={handleLoadMore}
           ListFooterComponent={<FooterList isLoading={isLoading} />}
         />
       ) : (
         <View style={styles.loaderHumanitarianNeeds}>
-          {/*<ActivityIndicator size="large" />*/}
+          <ActivityIndicator size="large" />
           {/*<Text>Cargando requerimientos</Text>*/}
-          <Loading isVisible={true} text="Cargando requerimientos" />
+          {/*<Loading isVisible={true} text="Cargando requerimientos" />*/}
         </View>
       )}
     </View>
@@ -59,19 +58,23 @@ const ListFoundationRequirements = ({
 
 function FoundationNeed({foundationNeed, navigation, toastRef}) {
   const [foundationAvatar, setFoundationAvatar] = useState(null);
-  const {images, food, personal_care, other, title, medicine, createdBy, id} =
-    foundationNeed.item;
+  const {
+    images,
+    food,
+    personal_care,
+    other,
+    title,
+    medicine,
+    createdBy,
+    id,
+    updatedAt,
+    createdAt,
+  } = foundationNeed.item;
   const [foundationSelected, setFoundationSelected] = useState(null);
+  const [isFavorite, setIsFavorite] = useState(false);
   const {user} = useAuth();
   const [loading, setLoading] = useState(false);
   const [loadingText, setLoadingText] = useState(null);
-
-  // useFocusEffect(
-  //   useCallback(() => {
-  //     db.ref(`foundations`);
-  //   }),
-  //   [],
-  // );
 
   useEffect(() => {
     db.ref(`users/${createdBy}`).on('value', snapshot => {
@@ -83,29 +86,35 @@ function FoundationNeed({foundationNeed, navigation, toastRef}) {
       .getDownloadURL()
       .then(async response => {
         setFoundationAvatar(response);
-      })
-      .catch(() => {
-        console.log('Error al descargar avatar');
       });
 
-    // db.ref(`users/${foundationNeed.item.createdBy}`).on('value', snapshot => {
-    //   setInfoFoundation(snapshot.val());
-    // });
     return () => {
       db.ref(`users/${createdBy}`).off();
     };
   }, [createdBy]);
 
-  if (!foundationSelected) {
-    return <Loading isVisible={true} text="Cargando información" />;
-  }
+  useEffect(() => {
+    if (user) {
+      db.ref('favorites').on('value', snapshot => {
+        snapshot.forEach(fav => {
+          const q = fav.val();
+          if (q.idFoundation === createdBy) {
+            if (q.idUser === user.uid) {
+              setIsFavorite(true);
+            }
+          }
+        });
+      });
+    }
 
-  const goFoundationNeed = () => {
-    navigation.navigate('foundation_need', {
-      foundationSelected,
-      foundationNeed,
-    });
-  };
+    return () => {
+      db.ref('favorites').off();
+    };
+  }, [createdBy, user]);
+
+  if (!foundationSelected) {
+    return <ActivityIndicator size="large" />;
+  }
 
   const handleDelete = () => {
     Alert.alert(
@@ -160,8 +169,104 @@ function FoundationNeed({foundationNeed, navigation, toastRef}) {
     });
   };
 
+  const addFavorite = () => {
+    if (!user) {
+      toastRef.current.show(
+        'Para usar el sistema de favoritos tienes que estar logeado',
+      );
+    } else if (user && user.role === 'user') {
+      const payload = {
+        idUser: user.uid,
+        idFoundation: foundationNeed.item.createdBy,
+      };
+      db.ref('favorites')
+        .push()
+        .set(payload)
+        .then(() => {
+          setIsFavorite(true);
+          toastRef.current.show('Fundación añadida a favoritos');
+        })
+        .catch(() => {
+          toastRef.current.show('Error al añadir la fundación a favoritos');
+        });
+    }
+    db.ref('favorites').off();
+  };
+
+  const removeFavorite = () => {
+    let idRemove = '';
+    db.ref('favorites').on('value', snapshot => {
+      snapshot.forEach(fav => {
+        const q = fav.val();
+        if (q.idFoundation === createdBy) {
+          if (q.idUser === user.uid) {
+            idRemove = fav.key;
+          }
+        }
+      });
+    });
+
+    db.ref(`favorites/${idRemove}`)
+      .remove()
+      .then(() => {
+        setIsFavorite(false);
+        toastRef.current.show('Fundación eliminada de favoritos');
+      })
+      .catch(() => {
+        toastRef.current.show('Error al eliminar el restaurante de favoritos');
+      });
+    db.ref('favorites').off();
+  };
+
+  const handleEditPress = () => {
+    Alert.alert(
+      'Editar publicación',
+      '¿Estas segur@ que deseas editar esta publicación?',
+      [{text: 'Cancelar'}, {text: 'Editar', onPress: handleEdit}],
+    );
+  };
+
+  const handleEdit = () => {
+    console.log(foundationSelected);
+    if (foundationSelected.role === 'animal_help') {
+      navigation.navigate('edit_animals_publication', {
+        id,
+        images,
+        food,
+        medicine,
+        other,
+        title,
+        createdBy,
+        createdAt,
+      });
+    } else if (foundationSelected.role === 'humanitarian_help') {
+      navigation.navigate('edit_humanitarian_publication', {
+        id,
+        images,
+        food,
+        personal_care,
+        other,
+        title,
+        createdBy,
+        createdAt,
+      });
+    }
+  };
+
   return (
     <View style={styles.viewHumanitarianNeed}>
+      <View style={styles.viewFavorite}>
+        {(!user || user.role === 'user') && (
+          <Icon
+            type="material-community"
+            name={isFavorite ? 'heart' : 'heart-outline'}
+            onPress={isFavorite ? removeFavorite : addFavorite}
+            color={isFavorite ? '#f00' : '#000'}
+            size={35}
+            underlayColor="transparent"
+          />
+        )}
+      </View>
       {user && user.role === 'administrator' && (
         <View>
           <Icon
@@ -169,7 +274,7 @@ function FoundationNeed({foundationNeed, navigation, toastRef}) {
             type="material-community"
             containerStyle={styles.iconEdit}
             size={35}
-            // onPress={handleDelete}
+            onPress={handleEditPress}
           />
           <Icon
             name="trash-can-outline"
@@ -181,12 +286,21 @@ function FoundationNeed({foundationNeed, navigation, toastRef}) {
         </View>
       )}
       <View style={{flexDirection: 'row'}}>
-        <Avatar
-          source={{uri: foundationAvatar}}
-          rounded
-          containerStyle={styles.avatar}
-          size="medium"
-        />
+        {foundationAvatar ? (
+          <Avatar
+            source={{uri: foundationAvatar}}
+            rounded
+            containerStyle={styles.avatar}
+            size="medium"
+          />
+        ) : (
+          <Avatar
+            source={avatarDefault}
+            rounded
+            containerStyle={styles.avatar}
+            size="medium"
+          />
+        )}
         <TouchableOpacity onPress={handleNavigation}>
           <Text style={styles.foundation}>
             {foundationSelected.displayName}
@@ -197,15 +311,14 @@ function FoundationNeed({foundationNeed, navigation, toastRef}) {
         </TouchableOpacity>
       </View>
       <Carousel arrayImages={images} height={250} width={screenWidth} />
-      {user && user.role !== 'user' ? (
-        <View>
-          <Text style={styles.title}>{title}</Text>
-        </View>
-      ) : (
-        <TouchableOpacity onPress={goFoundationNeed}>
-          <Text style={styles.title}>{title}</Text>
-        </TouchableOpacity>
-      )}
+      <Text>
+        Publicado:{'  '}
+        {new Date(updatedAt).getDate()}/{new Date(updatedAt).getMonth() + 1}/
+        {new Date(updatedAt).getFullYear()} {new Date(updatedAt).getHours()}:
+        {new Date(updatedAt).getMinutes()}
+      </Text>
+
+      <Text style={styles.title}>{title}</Text>
 
       {foundationSelected &&
       food !== '' &&
@@ -250,7 +363,7 @@ function FoundationNeed({foundationNeed, navigation, toastRef}) {
         </View>
       )}
       <Divider style={styles.divider} />
-      <Loading isVisible={loading} text={loadingText} />
+      {/*<Loading isVisible={loading} text={loadingText} />*/}
     </View>
   );
 }
@@ -279,7 +392,6 @@ const styles = StyleSheet.create({
   loaderHumanitarianNeeds: {
     marginTop: 10,
     marginBottom: 10,
-    alignItems: 'left',
   },
   descriptionCampaign: {
     marginTop: 5,
@@ -289,7 +401,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   title: {
-    fontSize: 18,
+    fontSize: 20,
     color: '#000',
     marginBottom: 10,
     fontWeight: 'bold',
@@ -303,13 +415,22 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   requirements: {
-    fontSize: 15,
+    fontSize: 18,
     fontWeight: 'bold',
     textAlign: 'justify',
   },
   requirementsText: {
-    fontSize: 15,
+    fontSize: 18,
     textAlign: 'justify',
+  },
+  viewFavorite: {
+    position: 'absolute',
+    top: 5,
+    right: 10,
+    zIndex: 2,
+    backgroundColor: '#fff',
+    padding: 5,
+    paddingLeft: 15,
   },
   notFoundHumanitarianNeeds: {
     marginTop: 10,

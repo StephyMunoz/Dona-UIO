@@ -1,7 +1,6 @@
 import React, {useCallback, useRef, useState} from 'react';
-import {View, ScrollView, StyleSheet, Text} from 'react-native';
-import {useFocusEffect} from '@react-navigation/native';
-import {useNavigation} from '@react-navigation/native';
+import {StyleSheet, Text, View} from 'react-native';
+import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {Icon} from 'react-native-elements';
 import {auth, db} from '../firebase';
 import ListAnimalCampaigns from '../components/campaigns/ListAnimalCampaigns';
@@ -18,7 +17,7 @@ const AnimalCareCampaigns = () => {
       const resultAnimalCampaigns = [];
 
       db.ref(`campaigns`)
-        .orderByChild('createdAt')
+        .orderByChild('updatedAt')
         .on('value', snapshot => {
           snapshot.forEach(campaign => {
             const q = campaign.val();

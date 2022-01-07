@@ -23,6 +23,8 @@ if (firebase.apps.length === 0) {
   app = firebase.app(); // if already initialized, use that one
 }
 
+// const app = firebase.initializeApp(firebaseConfig);
+
 export const db = app.database();
 export const auth = app.auth();
 export const storage = app.storage();

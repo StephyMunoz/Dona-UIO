@@ -1,19 +1,16 @@
-import React, {useEffect, useState} from 'react';
+import React, {useState} from 'react';
 import {
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  FlatList,
   StyleSheet,
   Text,
   View,
-  FlatList,
-  ActivityIndicator,
-  TouchableOpacity,
-  Image,
-  Dimensions,
-  Alert,
 } from 'react-native';
-import {Avatar, Icon, Image as ImageElements} from 'react-native-elements';
+import {Icon} from 'react-native-elements';
 import {size} from 'lodash';
 import {useNavigation} from '@react-navigation/native';
-import imageNotFound from '../../images/no-image.png';
 import {Divider} from 'react-native-elements/dist/divider/Divider';
 import Loading from '../Loading';
 import {db} from '../../firebase';
@@ -53,8 +50,17 @@ const ListHumanitarianNeeds = ({humanitarianNeeds, isLoading, toastRef}) => {
 };
 
 function HumanitarianNeed({humanitarianNeed, toastRef, navigation}) {
-  const {id, images, food, personal_care, other, title, createdBy, createdAt} =
-    humanitarianNeed.item;
+  const {
+    id,
+    images,
+    food,
+    personal_care,
+    other,
+    title,
+    createdBy,
+    createdAt,
+    updatedAt,
+  } = humanitarianNeed.item;
   const [loading, setLoading] = useState(false);
   const [loadingText, setLoadingText] = useState(null);
 
@@ -76,6 +82,7 @@ function HumanitarianNeed({humanitarianNeed, toastRef, navigation}) {
       title,
       createdBy,
       createdAt,
+      updatedAt,
     });
   };
 

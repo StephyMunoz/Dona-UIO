@@ -1,14 +1,14 @@
-import React, {useState, useRef, useCallback, useEffect} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {
-  StyleSheet,
-  View,
-  Text,
-  FlatList,
   ActivityIndicator,
-  TouchableOpacity,
   Alert,
+  FlatList,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import {Image, Icon, Button} from 'react-native-elements';
+import {Icon, Image} from 'react-native-elements';
 import {useFocusEffect} from '@react-navigation/native';
 import Toast from 'react-native-easy-toast';
 import Loading from '../components/Loading';
@@ -20,6 +20,7 @@ const Favorites = props => {
   const {navigation} = props;
   const {user} = useAuth();
   const [foundations, setFoundations] = useState(null);
+  const [foundationList, setFoundationList] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [reloadData, setReloadData] = useState(false);
   const toastRef = useRef();
@@ -27,39 +28,53 @@ const Favorites = props => {
   useFocusEffect(
     useCallback(() => {
       const listFoundations = [];
-      if (user && user.role === 'user') {
-        db.ref('favorites').on('value', snapshot => {
-          snapshot.forEach(foundation => {
-            if (foundation.val().idUser === user.uid) {
-              listFoundations.push(foundation.val().idFoundation);
-            }
-          });
-        });
-      }
-      const arrayFoundations = [];
-      listFoundations.forEach(idFoundation => {
-        db.ref(`users/${idFoundation}`).on('value', snapshot => {
-          arrayFoundations.push(snapshot.val());
+      db.ref('favorites').on('value', snapshot => {
+        snapshot.forEach(foundation => {
+          if (foundation.val().idUser === user.uid) {
+            listFoundations.push(foundation.val().idFoundation);
+          }
         });
       });
-      setFoundations(arrayFoundations);
+      setFoundations(listFoundations);
       setReloadData(false);
-    }, [user]),
+    }, [user.uid, reloadData]),
   );
 
-  if (!foundations) {
-    return <Loading isVisible={true} text="Cargando información" />;
+  useFocusEffect(
+    useCallback(() => {
+      let foundationFavorite = [];
+      if (foundations) {
+        foundations.forEach(foundation => {
+          db.ref(`users/${foundation}`).on('value', snapshot => {
+            foundationFavorite.push(snapshot.val());
+          });
+        });
+        setFoundationList(foundationFavorite);
+      }
+      setReloadData(false);
+    }, [foundations, reloadData]),
+  );
+
+  // if (!foundationList) {
+  //   return <Loading isVisible={true} text="Cargando información" />;
+  // }
+
+  if (!foundationList) {
+    // return <NotFoundFoundations />;
+    return <ActivityIndicator size="large" />;
+  } else if (foundationList && foundationList.length === 0) {
+    return <NotFoundFoundations />;
   }
 
-  if (foundations?.length === 0) {
-    return <NotFoundFoundations />;
+  if (foundationList) {
+    console.log('foun', foundationList);
   }
 
   return (
     <View style={styles.viewBody}>
       {foundations ? (
         <FlatList
-          data={foundations}
+          data={foundationList}
           renderItem={foundation => (
             <Foundation
               foundation={foundation}
@@ -95,6 +110,7 @@ function NotFoundFoundations() {
     </View>
   );
 }
+
 function Foundation(props) {
   const {foundation, setIsLoading, toastRef, setReloadData, navigation} = props;
   const {uid, displayName, email} = foundation.item;

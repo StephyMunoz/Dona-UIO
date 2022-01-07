@@ -1,11 +1,11 @@
-import React, {useEffect, useState} from 'react';
+import React, {useState} from 'react';
 import {
   Image,
-  View,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
-  ScrollView,
+  View,
 } from 'react-native';
 import refugio_animal from '../../images/DogJumpDoodle.png';
 import shelter from '../../images/LovingDoodle.png';

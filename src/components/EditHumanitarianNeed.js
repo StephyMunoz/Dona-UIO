@@ -45,6 +45,10 @@ const EditHumanitarianNeed = props => {
 
   console.log('props', getKey);
 
+  if (!getKey) {
+    return <Loading isVisible={true} />;
+  }
+
   const schema = yup.object().shape({
     title: yup.string().required('Ingrese un título adecuado'),
     food: yup.string(),
@@ -70,7 +74,7 @@ const EditHumanitarianNeed = props => {
       setError(null);
       try {
         setLoading(true);
-        setLoadingText('Guardando información');
+        setLoadingText('Actualizando información');
         await uploadImageStorage().then(response => {
           db.ref(`foundations/${getKey}`)
             .set({
@@ -86,7 +90,11 @@ const EditHumanitarianNeed = props => {
             })
             .then(() => {
               setLoading(false);
-              navigation.navigate('humanitarian_needs');
+              if (user.role === 'administrator') {
+                navigation.navigate('home');
+              } else {
+                navigation.navigate('humanitarian_needs');
+              }
             })
             .catch(e => {
               setLoading(false);
@@ -291,7 +299,7 @@ const EditHumanitarianNeed = props => {
               </View>
               <Button
                 onPress={handleSubmit}
-                title="Ingresar requerimiento"
+                title="Actualizar requerimiento"
                 // disabled={!isValid}
                 containerStyle={styles.btnContainerLogin}
                 // loading={isLoading}

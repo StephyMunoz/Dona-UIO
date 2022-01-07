@@ -1,9 +1,9 @@
 import React, {useEffect, useState} from 'react';
-import {Alert, Image, StyleSheet, Text, View} from 'react-native';
+import {Image, StyleSheet, Text, View} from 'react-native';
 import Modal from '../Modal';
 import {Formik} from 'formik';
-import {Button, Divider, Icon, Input} from 'react-native-elements';
-import {auth, db} from '../../firebase';
+import {Button, Divider, Input} from 'react-native-elements';
+import {db} from '../../firebase';
 import {useAuth} from '../../lib/auth';
 import * as yup from 'yup';
 import ecuadorFlag from '../../images/ecuador.png';

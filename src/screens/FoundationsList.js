@@ -14,14 +14,11 @@ import {db, storage} from '../firebase';
 import Loading from '../components/Loading';
 import {size} from 'lodash';
 import {useAuth} from '../lib/auth';
-import {Avatar, Icon, Overlay} from 'react-native-elements';
-import Carousel from '../components/Carousel';
+import {Icon} from 'react-native-elements';
 import {Divider} from 'react-native-elements/dist/divider/Divider';
 import Toast from 'react-native-easy-toast';
 import {useNavigation} from '@react-navigation/native';
 import avatarDefault from '../images/avatar-default.jpg';
-
-import Modal from '../components/Modal';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -76,6 +73,7 @@ const FoundationsList = () => {
       <Toast ref={toastRef} position="center" opacity={0.9} />
     </View>
   );
+
   function Foundation({foundation, navigation}) {
     const [avatar, setAvatar] = useState(null);
     const {uid, displayName, email} = foundation.item;

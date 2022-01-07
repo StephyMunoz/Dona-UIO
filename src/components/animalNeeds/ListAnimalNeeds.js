@@ -1,19 +1,16 @@
 import React, {useState} from 'react';
 import {
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  FlatList,
   StyleSheet,
   Text,
   View,
-  FlatList,
-  ActivityIndicator,
-  TouchableOpacity,
-  Image,
-  Alert,
-  Dimensions,
 } from 'react-native';
-import {Avatar, Icon, Image as ImageElements} from 'react-native-elements';
+import {Icon} from 'react-native-elements';
 import {size} from 'lodash';
 import {useNavigation} from '@react-navigation/native';
-import imageNotFound from '../../images/no-image.png';
 import {Divider} from 'react-native-elements/dist/divider/Divider';
 import Loading from '../Loading';
 import Carousel from '../Carousel';
@@ -53,8 +50,17 @@ const ListAnimalNeeds = ({animalNeeds, isLoading, toastRef}) => {
 };
 
 function AnimalNeed({animalNeed, navigation, toastRef}) {
-  const {id, images, food, medicine, other, title, createdBy, createdAt} =
-    animalNeed.item;
+  const {
+    id,
+    images,
+    food,
+    medicine,
+    other,
+    title,
+    createdBy,
+    createdAt,
+    updatedAt,
+  } = animalNeed.item;
   const [isLoading, setIsLoading] = useState(false);
   const [loadingText, setLoadingText] = useState(null);
 
@@ -111,6 +117,7 @@ function AnimalNeed({animalNeed, navigation, toastRef}) {
         .then(() => {
           setIsLoading(false);
           toastRef.current.show('Publicación eliminada exitosamente');
+          navigation.navigate('animal_needs');
         })
         .catch(() => {
           setIsLoading(false);
@@ -149,6 +156,12 @@ function AnimalNeed({animalNeed, navigation, toastRef}) {
           onPress={handleDelete}
         />
         <Carousel arrayImages={images} height={250} width={screenWidth - 20} />
+        <Text>
+          Publicado:{'  '}
+          {new Date(updatedAt).getDate()}/{new Date(updatedAt).getMonth() + 1}/
+          {new Date(updatedAt).getFullYear()} {new Date(updatedAt).getHours()}:
+          {new Date(updatedAt).getMinutes()}
+        </Text>
         {food !== '' && (
           <View>
             <Text style={styles.requirements}>

@@ -1,7 +1,6 @@
 import React, {useRef, useState} from 'react';
 import {
   Alert,
-  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -9,18 +8,12 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import {
-  Button,
-  Input,
-  Button as ButtonElements,
-  Icon,
-  Avatar,
-} from 'react-native-elements';
+import {Avatar, Button, Icon, Input} from 'react-native-elements';
 import {Formik} from 'formik';
-import {auth, storage, db} from '../../firebase';
+import {db, storage} from '../../firebase';
 import * as yup from 'yup';
-import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
-import {map, size, filter} from 'lodash';
+import {launchImageLibrary} from 'react-native-image-picker';
+import {filter, map, size} from 'lodash';
 import {useAuth} from '../../lib/auth';
 import uuid from 'random-uuid-v4';
 import {useNavigation} from '@react-navigation/native';
@@ -69,6 +62,7 @@ const AnimalCampaignForm = () => {
             .push()
             .set({
               createdAt: new Date().getTime(),
+              updatedAt: new Date().getTime(),
               title: data.title,
               campaignDescription: data.campaignDescription,
               other: data.other,
@@ -98,6 +92,7 @@ const AnimalCampaignForm = () => {
     await launchImageLibrary(options, response => {
       if (response.didCancel) {
         console.log('User cancelled image picker');
+        toastRef.current.show('Ha cancelado el selector de imágenes');
       } else if (response.errorCode) {
         console.log('ImagePicker Error: ', response.errorCode);
       } else {

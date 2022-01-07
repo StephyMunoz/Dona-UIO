@@ -1,16 +1,14 @@
 import React, {useEffect, useState} from 'react';
 import {Alert, Dimensions, StyleSheet, Text, View} from 'react-native';
-import {Input, Button, Icon} from 'react-native-elements';
+import {Button, Input} from 'react-native-elements';
 import {Formik} from 'formik';
 import * as yup from 'yup';
-import {auth, db} from '../../firebase';
+import {db} from '../../firebase';
 import {useAuth} from '../../lib/auth';
 import Modal from '../Modal';
-import {map, size, filter} from 'lodash';
 import * as Permissions from 'react-native-permissions';
 import * as Location from 'react-native-location';
 import MapView from 'react-native-maps';
-import uuid from 'random-uuid-v4';
 
 const widthScreen = Dimensions.get('window').width;
 

@@ -2,7 +2,6 @@ import React from 'react';
 import {createStackNavigator} from '@react-navigation/stack';
 import AnimalCareCampaigns from '../screens/AnimalCareCampaigns';
 import AnimalCampaignForm from '../components/campaigns/AnimalCampaignForm';
-import EditAnimalNeed from '../components/EditAnimalNeed';
 import EditCampaign from '../components/EditCampaign';
 
 const Stack = createStackNavigator();

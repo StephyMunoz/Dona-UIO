@@ -1,7 +1,6 @@
 import React from 'react';
 import {createStackNavigator} from '@react-navigation/stack';
 import Home from '../screens/Home';
-import FoundationNeed from '../screens/FoundationNeed';
 import FoundationInformation from '../screens/FoundationInformation';
 import EditAnimalNeed from '../components/EditAnimalNeed';
 import EditHumanitarianNeed from '../components/EditHumanitarianNeed';
@@ -16,12 +15,16 @@ export default function FoundationStack() {
     // }}
     >
       <Stack.Screen name="home" component={Home} options={{title: 'Inicio'}} />
-      <Stack.Screen name="foundation_need" component={FoundationNeed} />
       <Stack.Screen name="foundation" component={FoundationInformation} />
-      <Stack.Screen name="edit_needs_animals" component={EditAnimalNeed} />
       <Stack.Screen
-        name="edit_needs_humanitarian"
+        name="edit_animals_publication"
+        component={EditAnimalNeed}
+        options={{title: 'Editar necesidades'}}
+      />
+      <Stack.Screen
+        name="edit_humanitarian_publication"
         component={EditHumanitarianNeed}
+        options={{title: 'Editar necesidades'}}
       />
     </Stack.Navigator>
   );

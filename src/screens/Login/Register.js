@@ -1,13 +1,6 @@
-import React, {useState, useRef, useEffect} from 'react';
-import {
-  Image,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import {Input, Icon, Button} from 'react-native-elements';
+import React, {useRef, useState} from 'react';
+import {Image, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {Button, Icon, Input} from 'react-native-elements';
 import Loading from '../../components/Loading';
 import {Formik} from 'formik';
 import * as yup from 'yup';
@@ -15,10 +8,7 @@ import Toast from 'react-native-easy-toast';
 import {useAuth} from '../../lib/auth';
 import {useNavigation} from '@react-navigation/native';
 import accountImage from '../../images/gdpr_icons_5.png';
-import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';
 import {auth} from '../../firebase';
-import Account from './index';
-import loginIcon from '../../images/hero_illustration.png';
 
 const Register = ({role}) => {
   const [showPassword, setShowPassword] = useState(false);
@@ -61,8 +51,16 @@ const Register = ({role}) => {
         role,
       });
       await auth.currentUser.updateProfile({displayName: data.displayName});
-      setLoading(false);
-      navigation.navigate('home');
+
+      await auth.currentUser
+        .sendEmailVerification()
+        .then(
+          toastRef.current.show(
+            'Se ha enviado un email de verificación a tu correo electrónico',
+          ),
+          setLoading(false),
+          navigation.navigate('home'),
+        );
     } catch (error) {
       const errorCode = error.code;
       // toastRef.current.show(errorCode);
@@ -177,6 +175,7 @@ const Register = ({role}) => {
         )}
       </Formik>
       <Loading isVisible={loading} text="Creando una cuenta" />
+      <Toast ref={toastRef} position="center" opacity={0.9} />
     </View>
   );
 };

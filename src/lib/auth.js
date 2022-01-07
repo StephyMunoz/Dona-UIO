@@ -59,6 +59,7 @@ function useAuthProvider() {
     //   console.log("NO USER");
     // }
   }, []);
+
   async function register(data) {
     console.log('data', data);
     try {
@@ -77,6 +78,7 @@ function useAuthProvider() {
         role,
         description,
       });
+
       //.then((user) => {
       // Signed in
       // message.success('Usuario registrado');
@@ -115,25 +117,19 @@ function useAuthProvider() {
     } catch (error) {}
   }
 
-  // const sendPasswordResetEmail = (email) => {
-  //   return firebase
-  //     .auth()
-  //     .sendPasswordResetEmail(email)
-  //     .then(() => {
-  //       return true;
-  //     });
-  // };
-  //
-  // const confirmPasswordReset = (password, code) => {
-  //   const resetCode = code || getFromQueryString('oobCode');
-  //
-  //   return firebase
-  //     .auth()
-  //     .confirmPasswordReset(resetCode, password)
-  //     .then(() => {
-  //       return true;
-  //     });
-  // };
+  const sendPasswordResetEmail = email => {
+    return auth.sendPasswordResetEmail(email).then(() => {
+      return true;
+    });
+  };
+
+  const confirmPasswordReset = (password, code) => {
+    const resetCode = code || getFromQueryString('oobCode');
+
+    return auth.confirmPasswordReset(resetCode, password).then(() => {
+      return true;
+    });
+  };
 
   // }
 
@@ -162,8 +158,7 @@ function useAuthProvider() {
     register,
     login,
     logout,
-
-    // sendPasswordResetEmail,
-    // confirmPasswordReset
+    sendPasswordResetEmail,
+    confirmPasswordReset,
   };
 }

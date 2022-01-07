@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
   Alert,
   Image,
@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import {Input, Button, Icon} from 'react-native-elements';
+import {Button, Icon, Input} from 'react-native-elements';
 import Loading from '../../components/Loading';
 import {Formik} from 'formik';
 import * as yup from 'yup';
@@ -15,12 +15,16 @@ import {useAuth} from '../../lib/auth';
 import {useNavigation} from '@react-navigation/native';
 import loginIcon from '../../images/hero_illustration.png';
 import {auth} from '../../firebase';
+import Modal from '../../components/Modal';
+import Toast from 'react-native-easy-toast';
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loadingText, setLoadingText] = useState(null);
+  const [isVisible, setIsVisible] = useState(null);
   const {login, user} = useAuth();
+  const toastRef = useRef();
   const navigation = useNavigation();
 
   const schema = yup.object().shape({
@@ -32,6 +36,13 @@ const Login = () => {
       .string()
       .min(8, ({min}) => `Password must be at least ${min} characters`)
       .required('Password is required'),
+  });
+
+  const schemaVerify = yup.object().shape({
+    email: yup
+      .string()
+      .email('Ingrese un email válido')
+      .required('Dirección de correo necesario'),
   });
 
   const loginScreen = () => {
@@ -61,6 +72,27 @@ const Login = () => {
     setLoadingText('Verificando sesión');
     return <Loading isVisible={true} text="Verificando sesión" />;
   }
+
+  const resetPassword = () => {
+    Alert.alert(
+      'Reestablecer contraseña',
+      'Se enviará un mail para resetar la contraseña',
+      [{text: 'Cancelar'}, {text: 'Reestablecer', onPress: sendEmail}],
+    );
+  };
+
+  const sendEmail = () => {
+    setIsVisible(true);
+  };
+
+  const onFinish2 = data => {
+    auth
+      .sendPasswordResetEmail(data.email)
+      .then(
+        toastRef.current.show('Email enviado al correo ingresado', 1000),
+        setIsVisible(false),
+      );
+  };
 
   return (
     <View style={styles.formContainer}>
@@ -92,7 +124,7 @@ const Login = () => {
           <>
             <Input
               name="email"
-              placeholder="Ingresa tu mail"
+              placeholder="Ingresa tu email"
               containerStyle={styles.inputForm}
               onChangeText={handleChange('email')}
               onBlur={handleBlur('email')}
@@ -111,7 +143,7 @@ const Login = () => {
             )}
             <Input
               name="password"
-              placeholder="Password"
+              placeholder="Ingresa tu contraseña"
               style={styles.textInput}
               onChangeText={handleChange('password')}
               onBlur={handleBlur('password')}
@@ -134,14 +166,63 @@ const Login = () => {
             )}
             <Button
               onPress={handleSubmit}
-              title="LOGIN"
+              title="Inicia sesión"
               disabled={!isValid}
               containerStyle={styles.btnContainerLogin}
             />
           </>
         )}
       </Formik>
+      <TouchableOpacity onPress={resetPassword} style={styles.loginButton}>
+        <Text style={styles.loginText}>¿Olvidaste tu contraseña?</Text>
+      </TouchableOpacity>
       <Loading isVisible={loading} text={loadingText} />
+      <Modal isVisible={isVisible} setIsVisible={setIsVisible}>
+        <Formik
+          validationSchema={schemaVerify}
+          initialValues={{email: ''}}
+          onSubmit={onFinish2}>
+          {({
+            handleChange,
+            handleBlur,
+            handleSubmit,
+            values,
+            errors,
+            isValid,
+          }) => (
+            <>
+              <Input
+                name="email"
+                placeholder="Dirección de correo electrónico"
+                containerStyle={styles.inputForm}
+                onChangeText={handleChange('email')}
+                onBlur={handleBlur('email')}
+                value={values.email}
+                keyboardType="email-address"
+                rightIcon={
+                  <Icon
+                    type="material-community"
+                    name="at"
+                    iconStyle={styles.iconRight}
+                  />
+                }
+              />
+              {errors.email && (
+                <Text style={{fontSize: 10, color: 'red'}}>{errors.email}</Text>
+              )}
+
+              <Button
+                onPress={handleSubmit}
+                title="Enviar email"
+                disabled={!isValid}
+                containerStyle={styles.btnContainerLogin}
+                loading={loading}
+              />
+            </>
+          )}
+        </Formik>
+      </Modal>
+      <Toast ref={toastRef} position="center" opacity={0.9} />
     </View>
   );
 };

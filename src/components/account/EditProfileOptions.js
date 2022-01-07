@@ -7,12 +7,9 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import avatarImage from '../../images/character_icons_7.png';
-import {Avatar, Button, Icon, Input, ListItem} from 'react-native-elements';
+import {Avatar, Button, Icon, ListItem} from 'react-native-elements';
 import {useAuth} from '../../lib/auth';
-import Modal from '../Modal';
 import ChangeDisplayNameForm from './ChangeDisplayNameForm';
-import * as yup from 'yup';
 import {auth, db, storage} from '../../firebase';
 import Toast from 'react-native-easy-toast';
 import ChangeEmailForm from './ChangeEmailForm';
