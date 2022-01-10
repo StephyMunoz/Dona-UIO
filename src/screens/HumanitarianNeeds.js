@@ -1,4 +1,4 @@
-import React, {useCallback, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {StyleSheet, Text, View} from 'react-native';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {Icon} from 'react-native-elements';
@@ -11,8 +11,28 @@ const HumanitarianNeeds = () => {
   const navigation = useNavigation();
   const {user} = useAuth();
   const toastRef = useRef();
+  const limitNumber = 2;
   const [humanitarianNeeds, setHumanitarianNeeds] = useState([]);
+  const [totalFoundationNeeds, setTotalFoundationNeeds] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    let total = 0;
+    const getTotal = async () => {
+      await db.ref('foundations').on('value', snapshot => {
+        snapshot.forEach(need => {
+          const q = need.val();
+          if (q.createdBy === user.uid) {
+            setTotalFoundationNeeds((total = total + 1));
+          }
+        });
+      });
+    };
+    getTotal();
+    return () => {
+      db.ref('foundations').off();
+    };
+  }, [user.uid]);
 
   useFocusEffect(
     useCallback(() => {
@@ -22,7 +42,7 @@ const HumanitarianNeeds = () => {
         await db
           .ref('foundations')
           .orderByChild('updatedAt')
-          .limitToFirst(5)
+          .limitToLast(limitNumber)
           .on('value', snapshot => {
             snapshot.forEach(need => {
               const q = need.val();
@@ -40,22 +60,56 @@ const HumanitarianNeeds = () => {
     }, []),
   );
 
+  console.log('hoymanu', totalFoundationNeeds);
+  console.log('lenghy', humanitarianNeeds.length);
+
+  const handleLoadMore = async () => {
+    const resultNeeds = [];
+
+    if (humanitarianNeeds.length <= totalFoundationNeeds) {
+      setIsLoading(true);
+      await db
+        .ref('foundations')
+        .orderByChild('updatedAt')
+        .limitToLast(limitNumber)
+        .endBefore(humanitarianNeeds[humanitarianNeeds.length - 1].updatedAt)
+        .on('value', snapshot => {
+          // if (snapshot.numChildren() > 0) {
+          snapshot.forEach(need => {
+            const q = need.val();
+            if (q.createdBy === user.uid) {
+              setIsLoading(true);
+              resultNeeds.push(q);
+              console.log('hey');
+              console.log('hey', q);
+            }
+          });
+
+          // } else {
+          //   console.log('hiii');
+          //   setIsLoading(false);
+          // }
+        });
+      setHumanitarianNeeds([...humanitarianNeeds, ...resultNeeds.reverse()]);
+      setIsLoading(false);
+    }
+    return () => {
+      db.ref('foundations').off();
+    };
+  };
+
   return (
     <View style={styles.viewBody}>
       {humanitarianNeeds.length === 0 ? (
         <View>
-          {user !== 'user' || user === null ? (
-            <Text style={styles.textEmpty}>Aún no existen registros</Text>
-          ) : (
-            <Text style={styles.textEmpty}>
-              Aún no ingresa necesidades para su fundación
-            </Text>
-          )}
+          <Text style={styles.textEmpty}>
+            Aún no ingresa necesidades para su fundación
+          </Text>
         </View>
       ) : (
         <ListHumanitarianNeeds
           humanitarianNeeds={humanitarianNeeds}
-          // handleLoadMore={handleLoadMore}
+          handleLoadMore={handleLoadMore}
           isLoading={isLoading}
           toastRef={toastRef}
         />

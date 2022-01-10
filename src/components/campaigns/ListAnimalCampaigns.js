@@ -51,8 +51,16 @@ const ListAnimalCampaigns = ({animalCampaigns, isLoading, toastRef}) => {
 };
 
 function AnimalCampaign({animalCampaign, navigation, toastRef}) {
-  const {id, images, campaignDescription, other, title, createdAt, createdBy} =
-    animalCampaign.item;
+  const {
+    id,
+    images,
+    campaignDescription,
+    other,
+    title,
+    createdAt,
+    createdBy,
+    updatedAt,
+  } = animalCampaign.item;
   const [isLoading, setIsLoading] = useState(false);
   const [loadingText, setLoadingText] = useState(null);
 
@@ -73,6 +81,7 @@ function AnimalCampaign({animalCampaign, navigation, toastRef}) {
       title,
       createdBy,
       createdAt,
+      updatedAt,
     });
   };
 
@@ -146,6 +155,11 @@ function AnimalCampaign({animalCampaign, navigation, toastRef}) {
           onPress={handleDelete}
         />
         <Carousel arrayImages={images} height={250} width={screenWidth - 20} />
+        <Text style={styles.date}>
+          Publicado:{'  '}
+          {new Date(updatedAt).toLocaleDateString()}{' '}
+          {new Date(updatedAt).toLocaleTimeString()}
+        </Text>
         <View>
           <Text style={styles.requirements}>Descripción: </Text>
           <Text style={styles.requirementsText}>{campaignDescription}</Text>
@@ -156,7 +170,7 @@ function AnimalCampaign({animalCampaign, navigation, toastRef}) {
             <Text style={styles.requirementsText}>{other}</Text>
           </View>
         )}
-        <Divider />
+        <Divider width={1} style={styles.divider} />
       </View>
       <Loading isVisible={isLoading} text={loadingText} />
     </View>
@@ -191,6 +205,9 @@ const styles = StyleSheet.create({
   viewAnimalCampaign: {
     margin: 10,
   },
+  date: {
+    color: 'grey',
+  },
   title: {
     fontSize: 20,
     color: '#000',
@@ -223,10 +240,15 @@ const styles = StyleSheet.create({
   requirementsText: {
     fontSize: 18,
     textAlign: 'justify',
+    color: 'grey',
   },
   notFoundAnimalCampaigns: {
     marginTop: 10,
     marginBottom: 20,
     alignItems: 'center',
+  },
+  divider: {
+    marginTop: 10,
+    marginBottom: 20,
   },
 });

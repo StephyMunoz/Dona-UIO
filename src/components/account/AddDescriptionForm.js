@@ -6,10 +6,12 @@ import * as yup from 'yup';
 import {db} from '../../firebase';
 import {useAuth} from '../../lib/auth';
 import Modal from '../Modal';
+import Loading from '../Loading';
 
 export default function AddDescriptionForm({isVisible, setIsVisible}) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [loadingText, setLoadingText] = useState(null);
   const [userInfo, setUserInfo] = useState(null);
   const [change, setChange] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -23,7 +25,7 @@ export default function AddDescriptionForm({isVisible, setIsVisible}) {
 
   const onFinish = async data => {
     setLoading(true);
-    setError(null);
+    setLoadingText('Actualizando descripción');
     try {
       setChange(true);
       // await db.ref(`users/${user.uid}/name`).set(data.name);
@@ -65,7 +67,8 @@ export default function AddDescriptionForm({isVisible, setIsVisible}) {
                 <TextInput
                   name="description"
                   placeholder="Ingrese la descripción de la fundación"
-                  containerStyle={styles.inputForm}
+                  placeholderTextColor="#c1c1c1"
+                  style={styles.inputForm}
                   onChangeText={handleChange('description')}
                   onBlur={handleBlur('description')}
                   value={values.description}
@@ -98,6 +101,7 @@ export default function AddDescriptionForm({isVisible, setIsVisible}) {
             )}
           </Formik>
         </View>
+        <Loading isVisible={loading} text={loadingText} />
       </Modal>
     </View>
   );
@@ -114,6 +118,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#c2c2c2',
     borderBottomWidth: 1,
     borderTopColor: '#c2c2c2',
+    color: '#000',
   },
   btnContainer: {
     marginTop: 20,

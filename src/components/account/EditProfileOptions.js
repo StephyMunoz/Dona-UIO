@@ -9,20 +9,21 @@ import {
 } from 'react-native';
 import {Avatar, Button, Icon, ListItem} from 'react-native-elements';
 import {useAuth} from '../../lib/auth';
+import Toast from 'react-native-easy-toast';
 import ChangeDisplayNameForm from './ChangeDisplayNameForm';
 import {auth, db, storage} from '../../firebase';
-import Toast from 'react-native-easy-toast';
 import ChangeEmailForm from './ChangeEmailForm';
 import ChangePasswordForm from './ChangePasswordForm';
 import ContactForm from './ContactForm';
 import avatarDefault from '../../images/avatar-default.jpg';
 import {launchImageLibrary} from 'react-native-image-picker';
 import AddDescriptionForm from './AddDescriptionForm';
-import {useNavigation} from '@react-navigation/native';
 import AddLocation from './AddLocation';
 import Loading from '../Loading';
 
 const ProfileOptions = () => {
+  const {user, logout} = useAuth();
+  const toastRef = useRef();
   const [showModalDescription, setShowModalDescription] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -33,18 +34,12 @@ const ProfileOptions = () => {
   const [description, setDescription] = useState(null);
   const [loading, setLoading] = useState(false);
   const [textLoading, setTextLoading] = useState(null);
-  const [error, setError] = useState(null);
   const [change, setChange] = useState(false);
   const [changeLogout, setChangeLogout] = useState(false);
   const [showModalEmail, setShowModalEmail] = useState(false);
   const [showModalPassword, setShowModalPassword] = useState(false);
   const [showModalContact, setShowModalContact] = useState(false);
   const [showModalLocation, setShowModalLocation] = useState(false);
-  const [locationFoundation, setLocationFoundation] = useState(null);
-
-  const {user, logout} = useAuth();
-  const navigation = useNavigation();
-  const toastRef = useRef();
 
   useEffect(() => {
     (async () => {

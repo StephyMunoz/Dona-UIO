@@ -193,6 +193,8 @@ const AnimalNeedsForm = () => {
                 <TextInput
                   name="food"
                   placeholder="Ingrese información relacionada con el alimento balanceado"
+                  placeholderTextColor="#c1c1c1"
+                  style={styles.textPlaceholder}
                   onChangeText={handleChange('food')}
                   onBlur={handleBlur('food')}
                   value={values.food}
@@ -225,6 +227,8 @@ const AnimalNeedsForm = () => {
                 <TextInput
                   name="medicine"
                   placeholder="Ingrese información relacionada al medicamento (opcional)"
+                  placeholderTextColor="#c1c1c1"
+                  style={styles.textPlaceholder}
                   onChangeText={handleChange('medicine')}
                   onBlur={handleBlur('medicine')}
                   value={values.medicine}
@@ -243,6 +247,8 @@ const AnimalNeedsForm = () => {
               <View style={styles.textInput}>
                 <TextInput
                   name="other"
+                  placeholderTextColor="#c1c1c1"
+                  style={styles.textPlaceholder}
                   placeholder="En este apartado puede incluir otras necesidades de la fundación (opcional)"
                   onChangeText={handleChange('other')}
                   onBlur={handleBlur('other')}
@@ -308,6 +314,9 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 30,
     margin: 10,
+  },
+  textPlaceholder: {
+    color: '#000',
   },
   textStyle: {
     fontSize: 18,

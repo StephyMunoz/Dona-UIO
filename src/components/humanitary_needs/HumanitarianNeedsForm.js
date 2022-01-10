@@ -12,7 +12,6 @@ import {Avatar, Button, Icon, Input} from 'react-native-elements';
 import {Formik} from 'formik';
 import {db, storage} from '../../firebase';
 import * as yup from 'yup';
-// import * as ImagePicker from 'react-native-image-picker';
 import {launchImageLibrary} from 'react-native-image-picker';
 import {filter, map, size} from 'lodash';
 import {useAuth} from '../../lib/auth';
@@ -92,8 +91,10 @@ const HumanitarianNeedsForm = () => {
     await launchImageLibrary(options, response => {
       if (response.didCancel) {
         console.log('User cancelled image picker');
+        toastRef.current.show('Selección de imagen cancelada');
       } else if (response.errorCode) {
         console.log('ImagePicker Error: ', response.errorCode);
+        toastRef.current.show('Ocurrió un error intente luego');
       } else {
         setImagesSelected([...imagesSelected, response.assets[0].uri]);
       }
@@ -189,8 +190,10 @@ const HumanitarianNeedsForm = () => {
               </Text>
               <View style={styles.textInput}>
                 <TextInput
+                  style={styles.textPlaceholder}
                   name="food"
                   placeholder="Ingrese información relacionada con el alimento requerido"
+                  placeholderTextColor="#c1c1c1"
                   onChangeText={handleChange('food')}
                   onBlur={handleBlur('food')}
                   value={values.food}
@@ -218,7 +221,9 @@ const HumanitarianNeedsForm = () => {
               <View style={styles.textInput}>
                 <TextInput
                   name="personal_care"
+                  style={styles.textPlaceholder}
                   placeholder="Ingrese información relacionada con productos de higiene personal (opcional)"
+                  placeholderTextColor="#c1c1c1"
                   onChangeText={handleChange('personal_care')}
                   onBlur={handleBlur('personal_care')}
                   value={values.personal_care}
@@ -239,6 +244,8 @@ const HumanitarianNeedsForm = () => {
                   name="other"
                   placeholder="En este apartado puede incluir otras necesidades de la fundación (opcional)"
                   onChangeText={handleChange('other')}
+                  placeholderTextColor="#c1c1c1"
+                  style={styles.textPlaceholder}
                   onBlur={handleBlur('other')}
                   value={values.other}
                   errorMessage={error}
@@ -252,15 +259,18 @@ const HumanitarianNeedsForm = () => {
                   </Text>
                 )}
               </View>
-              <Text style={styles.subtitle}>Seleccione una imagen</Text>
+              <Text style={styles.subtitle}>
+                Seleccione una imagen (Máximo 4)
+              </Text>
               <View style={styles.viewImages}>
-                {size(imagesSelected) < 4 && (
+                {size(imagesSelected) < 5 && (
                   <TouchableOpacity onPress={handleLaunchCamera}>
                     <Icon
                       type="material-community"
                       name="camera"
                       color="#7a7a7a"
                       containerStyle={styles.containerIcon}
+                      size={40}
                     />
                   </TouchableOpacity>
                 )}
@@ -318,17 +328,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     borderColor: '#c2c2c2',
   },
+  textPlaceholder: {
+    color: '#000',
+  },
   textInput: {
     borderBottomColor: '#c2c2c2',
     borderBottomWidth: 1,
     borderTopColor: '#c2c2c2',
     marginBottom: 10,
-  },
-  checkBox: {
-    backgroundColor: '#f2f2f2',
-  },
-  checkOther: {
-    textAlign: 'center',
+    color: '#c2c2c2',
   },
   imageButton: {
     textAlign: 'center',

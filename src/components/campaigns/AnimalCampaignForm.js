@@ -189,6 +189,8 @@ const AnimalCampaignForm = () => {
               <View style={styles.textInput}>
                 <TextInput
                   name="campaignDescription"
+                  placeholderTextColor="#grey"
+                  style={styles.textPlaceholder}
                   placeholder="Descripción de la campaña"
                   onChangeText={handleChange('campaignDescription')}
                   onBlur={handleBlur('campaignDescription')}
@@ -210,6 +212,8 @@ const AnimalCampaignForm = () => {
                 <TextInput
                   name="other"
                   placeholder="Incluya más información (opcional)"
+                  placeholderTextColor="grey"
+                  style={styles.textPlaceholder}
                   onChangeText={handleChange('other')}
                   onBlur={handleBlur('other')}
                   value={values.other}
@@ -254,7 +258,6 @@ const AnimalCampaignForm = () => {
                 title="Guardar campaña"
                 disabled={!isValid}
                 containerStyle={styles.btnContainerLogin}
-                loading={loading}
               />
             </>
           )}
@@ -279,6 +282,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#000',
     textAlign: 'center',
+  },
+  textPlaceholder: {
+    color: '#000',
   },
   subtitle: {
     textAlign: 'center',

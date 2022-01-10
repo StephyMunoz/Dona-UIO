@@ -46,7 +46,7 @@ const EditAnimalNeed = props => {
   }, [id, createdBy]);
 
   if (!getKey) {
-    return <Loading isVisible={true} text="Cargando" />;
+    return <Loading isVisible={true} text="Cargando formulario" />;
   }
 
   const schema = yup.object().shape({
@@ -211,6 +211,8 @@ const EditAnimalNeed = props => {
                 <TextInput
                   name="food"
                   placeholder="Ingrese información relacionada con el alimento balanceado"
+                  placeholderTextColor="grey"
+                  style={styles.textPlaceholder}
                   onChangeText={handleChange('food')}
                   onBlur={handleBlur('food')}
                   value={values.food}
@@ -242,6 +244,8 @@ const EditAnimalNeed = props => {
                 <TextInput
                   name="medicine"
                   placeholder="Ingrese información relacionada al medicamento (opcional)"
+                  placeholderTextColor="grey"
+                  style={styles.textPlaceholder}
                   onChangeText={handleChange('medicine')}
                   onBlur={handleBlur('medicine')}
                   value={values.medicine}
@@ -260,6 +264,8 @@ const EditAnimalNeed = props => {
                 <TextInput
                   name="other"
                   placeholder="En este apartado puede incluir otras necesidades de la fundación (opcional)"
+                  placeholderTextColor="grey"
+                  style={styles.textPlaceholder}
                   onChangeText={handleChange('other')}
                   onBlur={handleBlur('other')}
                   value={values.other}
@@ -324,11 +330,15 @@ const styles = StyleSheet.create({
     paddingBottom: 30,
     margin: 10,
   },
+
   textStyle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#000',
     textAlign: 'center',
+  },
+  textPlaceholder: {
+    color: '#000',
   },
   subtitle: {
     textAlign: 'left',

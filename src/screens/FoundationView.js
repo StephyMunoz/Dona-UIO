@@ -2,7 +2,13 @@ import React, {useEffect, useState} from 'react';
 import {Alert, ScrollView, StyleSheet, Text, View} from 'react-native';
 import {useAuth} from '../lib/auth';
 import {db, storage} from '../firebase';
-import {Avatar, Divider, Icon, ListItem} from 'react-native-elements';
+import {
+  Avatar,
+  Divider,
+  Icon,
+  ListItem,
+  SocialIcon,
+} from 'react-native-elements';
 import {map} from 'lodash';
 import Map from '../components/Map';
 import {useNavigation} from '@react-navigation/native';
@@ -120,7 +126,15 @@ const FoundationView = () => {
             <Text style={styles.contactTitle}>Teléfonos de contacto</Text>
             {map(foundationPhone, (item, index) => (
               <ListItem key={index} containerStyle={styles.containerListItem}>
-                <Icon name="phone" type="material-community" color="#00a680" />
+                <Icon
+                  name="phone"
+                  reverse
+                  type="material-community"
+                  color="#00a680"
+                />
+                {item.length === 9 && (
+                  <SocialIcon type="whatsapp" style={styles.whatsappIcon} />
+                )}
                 <ListItem.Content>
                   <ListItem.Title>{item}</ListItem.Title>
                   <Divider width={1} />
@@ -159,7 +173,7 @@ function FoundationLocation(props) {
     },
     {
       text: user.email,
-      iconName: 'at',
+      iconName: 'email',
       iconType: 'material-community',
       action: null,
     },
@@ -190,6 +204,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 10,
     top: 10,
+  },
+  whatsappIcon: {
+    backgroundColor: '#00a680',
   },
   messages: {
     fontSize: 15,

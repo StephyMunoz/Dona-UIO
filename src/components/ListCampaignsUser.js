@@ -19,15 +19,20 @@ import Loading from './Loading';
 
 const screenWidth = Dimensions.get('window').width;
 
-const ListCampaignsUser = ({animalCampaigns, isLoading, toastRef}) => {
+const ListCampaignsUser = ({
+  animalCampaigns,
+  isLoading,
+  toastRef,
+  handleLoadMore,
+}) => {
   const navigation = useNavigation();
-  const [reloadData, setReloadData] = useState(false);
 
   return (
     <View>
       {size(animalCampaigns) > 0 ? (
         <FlatList
           data={animalCampaigns}
+          initialNumToRender={5}
           renderItem={campaign => (
             <AnimalCampaign
               animalCampaign={campaign}
@@ -37,7 +42,7 @@ const ListCampaignsUser = ({animalCampaigns, isLoading, toastRef}) => {
           )}
           keyExtractor={(item, index) => index.toString()}
           onEndReachedThreshold={0.5}
-          // onEndReached={handleLoadMore}
+          onEndReached={handleLoadMore}
           ListFooterComponent={<FooterList isLoading={isLoading} />}
         />
       ) : (
@@ -67,6 +72,7 @@ function AnimalCampaign({animalCampaign, navigation, toastRef}) {
   const [loadingText, setLoadingText] = useState(null);
   const [favorite, setFavorite] = useState(false);
   const {user} = useAuth();
+
   useFocusEffect(
     useCallback(() => {
       if (user) {
@@ -85,7 +91,7 @@ function AnimalCampaign({animalCampaign, navigation, toastRef}) {
       return () => {
         db.ref('favorites').off();
       };
-    }, [favorite, createdBy, user]),
+    }, [createdBy, user]),
   );
 
   useEffect(() => {
@@ -283,11 +289,10 @@ function AnimalCampaign({animalCampaign, navigation, toastRef}) {
       </View>
 
       <Carousel arrayImages={images} height={200} width={screenWidth} />
-      <Text>
+      <Text style={styles.date}>
         Publicado:{'  '}
-        {new Date(updatedAt).getDate()}/{new Date(updatedAt).getMonth() + 1}/
-        {new Date(updatedAt).getFullYear()} {new Date(updatedAt).getHours()}:
-        {new Date(updatedAt).getMinutes()}
+        {new Date(updatedAt).toLocaleDateString()}{' '}
+        {new Date(updatedAt).toLocaleTimeString()}
       </Text>
       <Text style={styles.title}>{title}</Text>
       <View>
@@ -368,10 +373,15 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'justify',
     marginTop: 10,
+    color: '#000',
+  },
+  date: {
+    color: 'grey',
   },
   requirementsText: {
     fontSize: 18,
     textAlign: 'justify',
+    color: 'grey',
   },
   notFoundAnimalCampaigns: {
     marginTop: 10,

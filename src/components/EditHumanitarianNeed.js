@@ -46,7 +46,7 @@ const EditHumanitarianNeed = props => {
   console.log('props', getKey);
 
   if (!getKey) {
-    return <Loading isVisible={true} />;
+    return <Loading isVisible={true} text="Cargando formulario" />;
   }
 
   const schema = yup.object().shape({
@@ -214,6 +214,8 @@ const EditHumanitarianNeed = props => {
                 <TextInput
                   name="food"
                   placeholder="Ingrese información relacionada con el alimento requerido"
+                  placeholderTextColor="grey"
+                  style={styles.textPlaceholder}
                   onChangeText={handleChange('food')}
                   onBlur={handleBlur('food')}
                   value={values.food}
@@ -242,6 +244,8 @@ const EditHumanitarianNeed = props => {
                 <TextInput
                   name="personal_care"
                   placeholder="Ingrese información relacionada con productos de higiene personal (opcional)"
+                  placeholderTextColor="grey"
+                  style={styles.textPlaceholder}
                   onChangeText={handleChange('personal_care')}
                   onBlur={handleBlur('personal_care')}
                   value={values.personal_care}
@@ -261,6 +265,8 @@ const EditHumanitarianNeed = props => {
                 <TextInput
                   name="other"
                   placeholder="En este apartado puede incluir otras necesidades de la fundación (opcional)"
+                  placeholderTextColor="grey"
+                  style={styles.textPlaceholder}
                   onChangeText={handleChange('other')}
                   onBlur={handleBlur('other')}
                   value={values.other}
@@ -321,6 +327,9 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 30,
     margin: 10,
+  },
+  textPlaceholder: {
+    color: '#000',
   },
   textStyle: {
     fontSize: 18,

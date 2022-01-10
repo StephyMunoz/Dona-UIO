@@ -47,8 +47,8 @@ const SelectRole = () => {
                 resizeMode="contain"
                 style={styles.logo}
               />
-              <Text>Fundación de </Text>
-              <Text>ayuda animal</Text>
+              <Text style={styles.textLogin}>Fundación de </Text>
+              <Text style={styles.textLogin}>ayuda animal</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={showA} style={styles.button}>
               <Image
@@ -56,13 +56,13 @@ const SelectRole = () => {
                 resizeMode="contain"
                 style={styles.logo}
               />
-              <Text>Fundación de </Text>
-              <Text>ayuda humanitaria</Text>
+              <Text style={styles.textLogin}>Fundación de </Text>
+              <Text style={styles.textLogin}>ayuda humanitaria</Text>
             </TouchableOpacity>
           </View>
           <TouchableOpacity onPress={showU} style={styles.button}>
             <Image source={user} resizeMode="contain" style={styles.logo} />
-            <Text>Usuario</Text>
+            <Text style={styles.textLogin}>Usuario</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -83,6 +83,7 @@ const styles = StyleSheet.create({
   textLogin: {
     fontSize: 20,
     textAlign: 'center',
+    color: '#000',
   },
   loginButton: {
     textAlign: 'center',

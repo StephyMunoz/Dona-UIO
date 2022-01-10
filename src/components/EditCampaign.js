@@ -59,7 +59,7 @@ const EditCampaign = props => {
   };
 
   if (!getKey) {
-    return <Loading isVisible={true} />;
+    return <Loading isVisible={true} text="Cargando formulario" />;
   }
 
   const onFinish = async data => {
@@ -206,6 +206,8 @@ const EditCampaign = props => {
                 <TextInput
                   name="campaignDescription"
                   placeholder="Descripción de la campaña"
+                  placeholderTextColor="grey"
+                  style={styles.textPlaceholder}
                   onChangeText={handleChange('campaignDescription')}
                   onBlur={handleBlur('campaignDescription')}
                   value={values.campaignDescription}
@@ -226,6 +228,8 @@ const EditCampaign = props => {
                 <TextInput
                   name="other"
                   placeholder="Incluya más información (opcional)"
+                  placeholderTextColor="grey"
+                  style={styles.textPlaceholder}
                   onChangeText={handleChange('other')}
                   onBlur={handleBlur('other')}
                   value={values.other}
@@ -288,6 +292,9 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 30,
     margin: 10,
+  },
+  textPlaceholder: {
+    color: '#000',
   },
   textStyle: {
     fontSize: 18,

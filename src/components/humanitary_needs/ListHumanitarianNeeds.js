@@ -18,7 +18,12 @@ import Carousel from '../Carousel';
 
 const screenWidth = Dimensions.get('window').width;
 
-const ListHumanitarianNeeds = ({humanitarianNeeds, isLoading, toastRef}) => {
+const ListHumanitarianNeeds = ({
+  humanitarianNeeds,
+  isLoading,
+  toastRef,
+  handleLoadMore,
+}) => {
   const navigation = useNavigation();
 
   return (
@@ -35,14 +40,14 @@ const ListHumanitarianNeeds = ({humanitarianNeeds, isLoading, toastRef}) => {
           )}
           keyExtractor={(item, index) => index.toString()}
           onEndReachedThreshold={0.5}
-          // onEndReached={handleLoadMore}
+          onEndReached={handleLoadMore}
           ListFooterComponent={<FooterList isLoading={isLoading} />}
         />
       ) : (
         <View style={styles.loaderHumanitarianNeeds}>
-          {/*<ActivityIndicator size="large" />*/}
+          <ActivityIndicator size="large" />
           {/*<Text>Cargando requerimientos</Text>*/}
-          <Loading isVisible={true} text="Cargando requerimientos" />
+          {/*<Loading isVisible={true} text="Cargando requerimientos" />*/}
         </View>
       )}
     </View>
@@ -96,7 +101,7 @@ function HumanitarianNeed({humanitarianNeed, toastRef, navigation}) {
 
   const handlePublication = () => {
     setLoading(true);
-    setLoadingText('Eliminando requerimiento');
+    setLoadingText('Eliminando publicación');
     let needFoundationKey = '';
     db.ref('foundations').on('value', snapshot => {
       snapshot.forEach(needItem => {
@@ -153,6 +158,11 @@ function HumanitarianNeed({humanitarianNeed, toastRef, navigation}) {
           onPress={handleDelete}
         />
         <Carousel arrayImages={images} height={250} width={screenWidth - 20} />
+        <Text style={styles.date}>
+          Publicado:{'  '}
+          {new Date(updatedAt).toLocaleDateString()}{' '}
+          {new Date(updatedAt).toLocaleTimeString()}
+        </Text>
         <View style={styles.needItem}>
           {food !== '' && (
             <View>
@@ -213,6 +223,9 @@ const styles = StyleSheet.create({
   viewHumanitarianNeed: {
     margin: 10,
   },
+  date: {
+    color: 'grey',
+  },
   title: {
     fontSize: 20,
     color: '#000',
@@ -240,12 +253,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     textAlign: 'justify',
-    // color: '#000',
+    color: '#000',
   },
   requirementsText: {
     fontSize: 18,
     textAlign: 'justify',
-    color: '#000',
+    color: 'grey',
   },
   notFoundHumanitarianNeeds: {
     marginTop: 10,

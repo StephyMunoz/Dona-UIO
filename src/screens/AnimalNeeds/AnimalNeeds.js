@@ -131,5 +131,6 @@ const styles = StyleSheet.create({
   textEmpty: {
     marginTop: 30,
     textAlign: 'center',
+    color: '#000',
   },
 });

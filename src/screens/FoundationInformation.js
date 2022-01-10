@@ -39,7 +39,7 @@ const FoundationInformation = props => {
   }
 
   const handleWhatsAppPress = async number => {
-    await Linking.openURL(`https://wa.me/+593${number}`);
+    await Linking.openURL(`https://wa.me/593${number}`);
   };
 
   const handleCallPress = async number => {

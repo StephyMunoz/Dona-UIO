@@ -46,7 +46,7 @@ const Login = () => {
   });
 
   const loginScreen = () => {
-    navigation.navigate('register');
+    navigation.navigate('selectRole');
   };
 
   useEffect(() => {
@@ -97,7 +97,7 @@ const Login = () => {
   return (
     <View style={styles.formContainer}>
       <Icon
-        onPress={() => navigation.navigate('register')}
+        onPress={() => navigation.navigate('selectRole')}
         name="arrow-circle-o-left"
         type="font-awesome"
         containerStyle={styles.backIcon}

@@ -156,11 +156,10 @@ function AnimalNeed({animalNeed, navigation, toastRef}) {
           onPress={handleDelete}
         />
         <Carousel arrayImages={images} height={250} width={screenWidth - 20} />
-        <Text>
+        <Text style={styles.date}>
           Publicado:{'  '}
-          {new Date(updatedAt).getDate()}/{new Date(updatedAt).getMonth() + 1}/
-          {new Date(updatedAt).getFullYear()} {new Date(updatedAt).getHours()}:
-          {new Date(updatedAt).getMinutes()}
+          {new Date(updatedAt).toLocaleDateString()}{' '}
+          {new Date(updatedAt).toLocaleTimeString()}
         </Text>
         {food !== '' && (
           <View>
@@ -185,7 +184,7 @@ function AnimalNeed({animalNeed, navigation, toastRef}) {
             <Text style={styles.requirementsText}>{other}</Text>
           </View>
         )}
-        <Divider style={styles.divider} />
+        <Divider style={styles.divider} width={1} />
       </View>
       <Loading isVisible={isLoading} text={loadingText} />
     </View>
@@ -219,6 +218,9 @@ const styles = StyleSheet.create({
   },
   viewAnimalNeed: {
     margin: 10,
+  },
+  date: {
+    color: 'grey',
   },
   title: {
     fontSize: 20,
@@ -256,6 +258,7 @@ const styles = StyleSheet.create({
   requirementsText: {
     fontSize: 18,
     textAlign: 'justify',
+    color: 'grey',
   },
   notFoundAnimalNeeds: {
     marginTop: 10,

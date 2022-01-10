@@ -14,6 +14,7 @@ const Campaigns = () => {
   const {user} = useAuth();
   const [animalCampaigns, setAnimalCampaigns] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const limitCampaigns = 5;
 
   useFocusEffect(
     useCallback(() => {
@@ -25,13 +26,10 @@ const Campaigns = () => {
           .limitToFirst(3)
           .on('value', snapshot => {
             snapshot.forEach(campaign => {
-              // let key = campaign.key;
-
               const q = campaign.val();
               resultAnimalCampaigns.push(q);
             });
             setAnimalCampaigns(resultAnimalCampaigns.reverse());
-            // setAnimalCampaignKey(resultId);
           });
       };
       getCampaigns();
@@ -42,15 +40,44 @@ const Campaigns = () => {
     }, []),
   );
 
+  const handleLoadMore = async () => {
+    const resultCampaigns = [];
+    // setStartNeeds(foundationNeeds[foundationNeeds.length - 1]);
+
+    if (animalCampaigns.length <= limitCampaigns) {
+      setIsLoading(true);
+      await db
+        .ref('foundations')
+        .orderByChild('updatedAt')
+        .limitToLast(limitCampaigns)
+        .endBefore(animalCampaigns[animalCampaigns.length - 1].updatedAt)
+        .on('value', snapshot => {
+          if (snapshot.numChildren() > 0) {
+            snapshot.forEach(need => {
+              const q = need.val();
+              resultCampaigns.push(q);
+            });
+            setIsLoading(false);
+          } else {
+            setIsLoading(false);
+          }
+        });
+      setAnimalCampaigns([...animalCampaigns, ...resultCampaigns.reverse()]);
+    }
+    return () => {
+      db.ref('foundations').off();
+    };
+  };
+
   return (
     <View style={styles.viewBody}>
       {/*<Text style={styles.textStyle}>Tenencia responsable de animales</Text>*/}
-      {animalCampaigns.length === 0 ? (
+      {animalCampaigns?.length === 0 ? (
         <Text style={styles.textEmpty}>No existen registros aún</Text>
       ) : (
         <ListCampaignsUser
           animalCampaigns={animalCampaigns}
-          // handleLoadMore={handleLoadMore}
+          handleLoadMore={handleLoadMore}
           isLoading={isLoading}
           toastRef={toastRef}
         />

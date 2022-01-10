@@ -33,6 +33,7 @@ const ListFoundationRequirements = ({
       {size(foundationsNeeds) > 0 ? (
         <FlatList
           data={foundationsNeeds}
+          initialNumToRender={3}
           renderItem={need => (
             <FoundationNeed
               foundationNeed={need}
@@ -49,7 +50,6 @@ const ListFoundationRequirements = ({
         <View style={styles.loaderHumanitarianNeeds}>
           <ActivityIndicator size="large" />
           {/*<Text>Cargando requerimientos</Text>*/}
-          {/*<Loading isVisible={true} text="Cargando requerimientos" />*/}
         </View>
       )}
     </View>
@@ -311,11 +311,10 @@ function FoundationNeed({foundationNeed, navigation, toastRef}) {
         </TouchableOpacity>
       </View>
       <Carousel arrayImages={images} height={250} width={screenWidth} />
-      <Text>
+      <Text style={styles.date}>
         Publicado:{'  '}
-        {new Date(updatedAt).getDate()}/{new Date(updatedAt).getMonth() + 1}/
-        {new Date(updatedAt).getFullYear()} {new Date(updatedAt).getHours()}:
-        {new Date(updatedAt).getMinutes()}
+        {new Date(updatedAt).toLocaleDateString()}{' '}
+        {new Date(updatedAt).toLocaleTimeString()}
       </Text>
 
       <Text style={styles.title}>{title}</Text>
@@ -418,10 +417,15 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     textAlign: 'justify',
+    color: '#000',
   },
   requirementsText: {
     fontSize: 18,
     textAlign: 'justify',
+    color: 'grey',
+  },
+  date: {
+    color: 'grey',
   },
   viewFavorite: {
     position: 'absolute',

@@ -1,19 +1,19 @@
-import React, {useCallback, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {Alert, StyleSheet, Text, View} from 'react-native';
 import Toast from 'react-native-easy-toast';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
-import {db} from '../firebase';
+import {auth, db} from '../firebase';
 import ListFoundationRequirements from '../components/ListFoundationRequirements';
 import {useAuth} from '../lib/auth';
+import avatarDefault from '../images/avatar-default.jpg';
 
 const Home = () => {
   const [foundationNeeds, setFoundationNeeds] = useState([]);
   const [totalNeeds, setTotalNeeds] = useState(0);
-  const [startNeeds, setStartNeeds] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const toastRef = useRef();
   const {user} = useAuth();
-  const limitNeed = 10;
+  const limitNeed = 5;
 
   if (user && user.emailVerified === false) {
     Alert.alert(
@@ -40,7 +40,6 @@ const Home = () => {
               const q = need.val();
               resultFoundationNeeds.push(q);
             });
-            // setStartNeeds(resultFoundationNeeds[0]);
             setFoundationNeeds(resultFoundationNeeds.reverse());
           });
       };
@@ -54,45 +53,38 @@ const Home = () => {
 
   const handleLoadMore = async () => {
     const resultNeeds = [];
-    setIsLoading(true);
-    if (foundationNeeds) {
-      setStartNeeds(foundationNeeds[foundationNeeds.length - 1]);
-    }
-    if (foundationNeeds.length < totalNeeds) {
+
+    if (foundationNeeds.length <= totalNeeds) {
       setIsLoading(true);
-    }
-    if (startNeeds) {
       await db
         .ref('foundations')
         .orderByChild('updatedAt')
         .limitToLast(limitNeed)
-        .startAfter(startNeeds.updatedAt)
-        .endBefore(startNeeds.updatedAt)
+        // .startAfter(startNeeds.updatedAt)
+        .endBefore(foundationNeeds[foundationNeeds.length - 1].updatedAt)
         .on('value', snapshot => {
-          snapshot.forEach(need => {
-            const q = need.val();
-            resultNeeds.push(q);
-          });
-          setIsLoading(false);
-          setFoundationNeeds([...foundationNeeds, ...resultNeeds.reverse()]);
+          if (snapshot.numChildren() > 0) {
+            snapshot.forEach(need => {
+              const q = need.val();
+              resultNeeds.push(q);
+            });
+            setIsLoading(false);
+          } else {
+            setIsLoading(false);
+          }
         });
-      return () => {
-        db.ref('foundations').off();
-      };
+      setFoundationNeeds([...foundationNeeds, ...resultNeeds.reverse()]);
     }
+    return () => {
+      db.ref('foundations').off();
+    };
   };
 
   return (
     <View style={styles.viewBody}>
       {foundationNeeds.length === 0 ? (
         <View>
-          {user && user.role !== 'user' ? (
-            <Text style={styles.textEmpty}>
-              Aún no ingresa necesidades para su fundación
-            </Text>
-          ) : (
-            <Text style={styles.textEmpty}>Aún no existen registros</Text>
-          )}
+          <Text style={styles.textEmpty}>Aún no existen registros</Text>
         </View>
       ) : (
         <ListFoundationRequirements
@@ -130,5 +122,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
     paddingBottom: 20,
+  },
+  textEmpty: {
+    textAlign: 'center',
+    marginTop: 30,
   },
 });
