@@ -15,7 +15,6 @@ import FavoritesStack from './FavoritesStack';
 import AdministratorStack from './AdministratorStack';
 import FoundationView from '../screens/FoundationView';
 import SearchStack from './SearchStack';
-import {Alert} from 'react-native';
 
 const Tab = createBottomTabNavigator();
 

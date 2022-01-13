@@ -1,27 +1,16 @@
-import React, {useCallback, useEffect, useRef, useState} from 'react';
-import {Alert, StyleSheet, Text, View} from 'react-native';
+import React, {useCallback, useRef, useState} from 'react';
+import {StyleSheet, Text, View} from 'react-native';
 import Toast from 'react-native-easy-toast';
-import {useFocusEffect, useNavigation} from '@react-navigation/native';
-import {auth, db} from '../firebase';
+import {useFocusEffect} from '@react-navigation/native';
+import {db} from '../firebase';
 import ListFoundationRequirements from '../components/ListFoundationRequirements';
-import {useAuth} from '../lib/auth';
-import avatarDefault from '../images/avatar-default.jpg';
 
 const Home = () => {
   const [foundationNeeds, setFoundationNeeds] = useState([]);
   const [totalNeeds, setTotalNeeds] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const toastRef = useRef();
-  const {user} = useAuth();
   const limitNeed = 5;
-
-  if (user && user.emailVerified === false) {
-    Alert.alert(
-      'Cuenta no verificada',
-      'Revisa tu badeja de Correo No Deseado o dirígete a Perfil para reenviar el link de activación. No podrás acceder a las funcionalidades completas',
-      [{text: 'Entendido'}],
-    );
-  }
 
   useFocusEffect(
     useCallback(() => {
@@ -50,7 +39,6 @@ const Home = () => {
       };
     }, []),
   );
-  console.log(totalNeeds);
 
   const handleLoadMore = async () => {
     const resultNeeds = [];

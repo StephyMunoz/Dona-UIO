@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {Image, StyleSheet, Text, View} from 'react-native';
+import {Alert, Image, StyleSheet, Text, View} from 'react-native';
 import Modal from '../Modal';
 import {Formik} from 'formik';
 import {Button, Divider, Input} from 'react-native-elements';
@@ -7,12 +7,12 @@ import {db} from '../../firebase';
 import {useAuth} from '../../lib/auth';
 import * as yup from 'yup';
 import ecuadorFlag from '../../images/ecuador.png';
+import Loading from '../Loading';
 
 const ContactForm = ({isVisible, setIsVisible}) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [change, setChange] = useState(false);
-  const [showModal, setShowModal] = useState(false);
   const [contacts, setContacts] = useState(null);
   const phoneRegExp =
     /^((\\+[1-9]{1,4}[ \\-]*)|(\\([0-9]{2,3}\\)[ \\-]*)|([0-9]{2,4})[ \\-]*)*?[0-9]{3,4}?[ \\-]*[0-9]{3,4}?$/;
@@ -46,9 +46,12 @@ const ContactForm = ({isVisible, setIsVisible}) => {
         await db.ref(`phones/${user.uid}/phone2`).set(data.phone2);
         await db.ref(`phones/${user.uid}/phone3`).set(data.phone3);
         setLoading(false);
-        setShowModal(false);
         setIsVisible(false);
-        console.log('numero guardado en la base');
+
+        Alert.alert(
+          'Contactos actualizados',
+          'Contactos actualizados exitosamente',
+        );
       } catch (e) {
         setLoading(false);
       }
@@ -58,9 +61,11 @@ const ContactForm = ({isVisible, setIsVisible}) => {
         await db.ref(`phones/${user.uid}/phone1`).set(data.phone1);
         await db.ref(`phones/${user.uid}/phone2`).set(data.phone2);
         setLoading(false);
-        setShowModal(false);
         setIsVisible(false);
-        console.log('numero guardado en la base');
+        Alert.alert(
+          'Contactos actualizados',
+          'Contactos actualizados exitosamente',
+        );
       } catch (e) {
         setLoading(false);
       }
@@ -69,14 +74,17 @@ const ContactForm = ({isVisible, setIsVisible}) => {
         setChange(true);
         await db.ref(`phones/${user.uid}/phone1`).set(data.phone1);
         setLoading(false);
-        setShowModal(false);
         setIsVisible(false);
-        console.log('numero guardado en la base');
+        Alert.alert(
+          'Contactos actualizados',
+          'Contactos actualizados exitosamente',
+        );
       } catch (e) {
         setLoading(false);
       }
     }
   };
+
   useEffect(() => {
     (async () => {
       db.ref(`phones/${user.uid}`).on('value', snapshot => {
@@ -177,11 +185,11 @@ const ContactForm = ({isVisible, setIsVisible}) => {
                   title="Guardar contactos"
                   disabled={!isValid}
                   containerStyle={styles.btnContainerLogin}
-                  loading={loading}
                 />
               </>
             )}
           </Formik>
+          <Loading isVisible={loading} text="Actualizando contactos" />
         </View>
       </Modal>
     </View>

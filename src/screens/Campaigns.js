@@ -14,16 +14,21 @@ const Campaigns = () => {
   const {user} = useAuth();
   const [animalCampaigns, setAnimalCampaigns] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [totalCampaigns, setTotalCampaings] = useState(0);
   const limitCampaigns = 5;
 
   useFocusEffect(
     useCallback(() => {
       const resultAnimalCampaigns = [];
 
+      db.ref('campaigns').on('value', snapshot => {
+        setTotalCampaings(snapshot.numChildren());
+      });
+
       const getCampaigns = async () => {
         db.ref('campaigns')
           .orderByChild('updatedAt')
-          .limitToFirst(3)
+          .limitToFirst(limitCampaigns)
           .on('value', snapshot => {
             snapshot.forEach(campaign => {
               const q = campaign.val();
@@ -44,7 +49,7 @@ const Campaigns = () => {
     const resultCampaigns = [];
     // setStartNeeds(foundationNeeds[foundationNeeds.length - 1]);
 
-    if (animalCampaigns.length <= limitCampaigns) {
+    if (animalCampaigns.length <= totalCampaigns) {
       setIsLoading(true);
       await db
         .ref('foundations')

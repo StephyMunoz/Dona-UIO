@@ -35,7 +35,7 @@ const ProfileOptions = () => {
   const [loading, setLoading] = useState(false);
   const [textLoading, setTextLoading] = useState(null);
   const [change, setChange] = useState(false);
-  const [changeLogout, setChangeLogout] = useState(false);
+  const [address, setAddress] = useState(null);
   const [showModalEmail, setShowModalEmail] = useState(false);
   const [showModalPassword, setShowModalPassword] = useState(false);
   const [showModalContact, setShowModalContact] = useState(false);
@@ -47,7 +47,7 @@ const ProfileOptions = () => {
       await db
         .ref(`users/${user.uid}/displayName`)
         .set(auth.currentUser.displayName);
-      db.ref(`phones/${user.uid}`).on('value', snapshot => {
+      await db.ref(`phones/${user.uid}`).on('value', snapshot => {
         const contacts = [];
         snapshot.forEach(contact => {
           const q = contact.val();
@@ -56,18 +56,24 @@ const ProfileOptions = () => {
         setContactList(contacts);
       });
 
-      db.ref(`users/${user.uid}/description`).on('value', snapshot => {
-        const descriptions = [];
-        snapshot.forEach(descrip => {
-          const q = descrip.val();
-          descriptions.push(q);
-        });
-        setDescription(descriptions);
-        return () => {
-          db.ref(`phones/${user.uid}`).off();
-          db.ref(`users/${user.uid}/description`).off();
-        };
+      await db.ref(`users/${user.uid}/description`).on('value', snapshot => {
+        setDescription(snapshot.val());
       });
+
+      await db.ref(`users/${user.uid}/address`).on('value', snapshot => {
+        setAddress(snapshot.val());
+      });
+
+      await db.ref(`users/${user.uid}/location`).on('value', snapshot => {
+        if (snapshot.val() !== null) {
+          setLocation(true);
+        }
+      });
+
+      return () => {
+        db.ref(`phones/${user.uid}`).off();
+        db.ref(`users/${user.uid}/description`).off();
+      };
     })();
     setChange(false);
   }, [change, user, description]);
@@ -148,16 +154,16 @@ const ProfileOptions = () => {
     setShowModalLocation(true);
   };
 
-  const getAlert = () => {
-    console.log('close sesion');
-    Alert.alert('Cerrar sesión', '¿Estás seguro/a que deseas cerrar sesión', [
-      {
-        text: 'Cancelar',
-        // onPress: () => console.log('Cancel Pressed'),
-      },
-      {text: 'Cerrar sesión', onPress: () => setChangeLogout(true)},
-    ]);
-  };
+  // const getAlert = () => {
+  //   console.log('close sesion');
+  //   Alert.alert('Cerrar sesión', '¿Estás seguro/a que deseas cerrar sesión', [
+  //     {
+  //       text: 'Cancelar',
+  //       // onPress: () => console.log('Cancel Pressed'),
+  //     },
+  //     {text: 'Cerrar sesión', onPress: () => setChangeLogout(true)},
+  //   ]);
+  // };
 
   // const handleLogout = () => {
   //   logout;
@@ -296,6 +302,7 @@ const ProfileOptions = () => {
                   </ListItem.Title>
                 )}
               </View>
+              <Text style={styles.description}>{description}</Text>
             </ListItem.Content>
             <Icon name="edit" type="material-icons" />
             <AddDescriptionForm
@@ -332,8 +339,6 @@ const ProfileOptions = () => {
                 ) : (
                   <ListItem.Title>Editar números de contacto</ListItem.Title>
                 )}
-
-                {/*<ListItem.Subtitle>{user.email}</ListItem.Subtitle>*/}
               </View>
             </ListItem.Content>
             <Icon name="edit" type="material-icons" />
@@ -377,6 +382,7 @@ const ProfileOptions = () => {
               <ListItem.Title>
                 Dirección y ubicación de la fundación
               </ListItem.Title>
+              <ListItem.Subtitle>{address}</ListItem.Subtitle>
             </ListItem.Content>
             <Icon name="edit" type="material-icons" />
             <AddLocation
@@ -420,6 +426,10 @@ const styles = StyleSheet.create({
   emailText: {
     paddingBottom: 5,
     fontSize: 15,
+    color: '#000',
+  },
+  description: {
+    marginTop: 15,
     color: '#000',
   },
   viewUserInfoForm: {

@@ -17,16 +17,13 @@ import {useAuth} from '../../lib/auth';
 import {useNavigation} from '@react-navigation/native';
 import accountImage from '../../images/gdpr_icons_5.png';
 import {auth, storage} from '../../firebase';
-import avatarDefault from '../../images/avatar-default.jpg';
-import {filter, map, size} from 'lodash';
+import {size} from 'lodash';
 import {launchImageLibrary} from 'react-native-image-picker';
-import uuid from 'random-uuid-v4';
 
 const Register = ({role}) => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [imageSelected, setImageSelected] = useState([]);
-  const [selectRole, setSelectRole] = useState(0);
   const navigation = useNavigation();
   const {register} = useAuth();
   const toastRef = useRef();
@@ -58,7 +55,6 @@ const Register = ({role}) => {
     navigation.navigate('login');
   };
   const goToIndex = () => {
-    setSelectRole(1);
     navigation.push('selectRole');
   };
 
@@ -70,51 +66,51 @@ const Register = ({role}) => {
   };
 
   const onFinish = async data => {
-    setLoading(true);
-    // console.log('data', data.displayName);
     if (role) {
-      try {
-        setLoading(true);
-        await register({
-          ...data,
-          role,
-        });
-        await auth.currentUser.updateProfile({displayName: data.displayName});
-
-        await uploadImage(imageSelected);
-
-        await storage
-          .ref(`avatar/${auth.currentUser.uid}`)
-          .getDownloadURL()
-          .then(async response => {
-            const update = {
-              photoURL: response,
-            };
-            await auth.currentUser.updateProfile(update);
-            setLoading(false);
-          })
-          .catch(() => {
-            toastRef.current.show('Error al actualizar el avatar.');
-            // console.log('Error al actualizar el avatar');
+      if (role !== 'user' && imageSelected.length === 0) {
+        toastRef.current.show('Debe escoger una foto de perfil para continuar');
+        setLoading(false);
+      } else {
+        try {
+          setLoading(true);
+          await register({
+            ...data,
+            role,
           });
+          await auth.currentUser.updateProfile({displayName: data.displayName});
 
-        await auth.currentUser.sendEmailVerification().then(
-          toastRef.current.show(
-            'Se ha enviado un email de verificación a tu correo electrónico',
-            Alert.alert(
-              'Completar verificación',
+          await uploadImage(imageSelected);
+
+          await storage
+            .ref(`avatar/${auth.currentUser.uid}`)
+            .getDownloadURL()
+            .then(async response => {
+              const update = {
+                photoURL: response,
+              };
+              await auth.currentUser.updateProfile(update);
+              setLoading(false);
+            })
+            .catch(() => {
+              toastRef.current.show('Error al actualizar el avatar.');
+            });
+
+          await auth.currentUser.sendEmailVerification().then(
+            toastRef.current.show(
               'Se ha enviado un email de verificación a tu correo electrónico',
+              Alert.alert(
+                'Completar verificación',
+                'Se ha enviado un email de verificación a tu correo electrónico',
+              ),
             ),
-          ),
 
-          setLoading(false),
-          navigation.navigate('home'),
-        );
-      } catch (error) {
-        const errorCode = error.code;
-        // toastRef.current.show(errorCode);
-        // message.error(translateMessage(errorCode));
-        // setLoading(false);
+            setLoading(false),
+            navigation.navigate('home'),
+          );
+        } catch (error) {
+          const errorCode = error.code;
+          toastRef.current.show(errorCode);
+        }
       }
     } else {
       toastRef('Seleccione un rol de usuario para poder registarse');

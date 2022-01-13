@@ -2,7 +2,6 @@ import React, {useEffect, useRef, useState} from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Dimensions,
   FlatList,
   Image,
   StyleSheet,
@@ -13,14 +12,11 @@ import {
 import {db, storage} from '../firebase';
 import Loading from '../components/Loading';
 import {size} from 'lodash';
-import {useAuth} from '../lib/auth';
 import {Icon} from 'react-native-elements';
 import {Divider} from 'react-native-elements/dist/divider/Divider';
 import Toast from 'react-native-easy-toast';
 import {useNavigation} from '@react-navigation/native';
 import avatarDefault from '../images/avatar-default.jpg';
-
-const screenWidth = Dimensions.get('window').width;
 
 const FoundationsList = () => {
   const navigation = useNavigation();
@@ -65,9 +61,9 @@ const FoundationsList = () => {
         />
       ) : (
         <View style={styles.loaderHumanitarianNeeds}>
-          {/*<ActivityIndicator size="large" />*/}
+          <ActivityIndicator size="large" />
           {/*<Text>Cargando requerimientos</Text>*/}
-          <Loading isVisible={true} text="Cargando listado de fundaciones" />
+          {/*<Loading isVisible={true} text="Cargando listado de fundaciones" />*/}
         </View>
       )}
       <Toast ref={toastRef} position="center" opacity={0.9} />
@@ -77,8 +73,6 @@ const FoundationsList = () => {
   function Foundation({foundation, navigation}) {
     const [avatar, setAvatar] = useState(null);
     const {uid, displayName, email} = foundation.item;
-    const [foundationSelected, setFoundationSelected] = useState(null);
-    const {user} = useAuth();
 
     useEffect(() => {
       storage
@@ -92,9 +86,6 @@ const FoundationsList = () => {
           console.log('Error al descargar avatar');
         });
 
-      // db.ref(`users/${foundationNeed.item.createdBy}`).on('value', snapshot => {
-      //   setInfoFoundation(snapshot.val());
-      // });
       return () => {
         db.ref(`users/${uid}`).off();
       };
@@ -103,7 +94,7 @@ const FoundationsList = () => {
     const handleDelete = () => {
       Alert.alert(
         'Eliminar fundación',
-        `¿Esta seguro que desea eliminar la fundación ${displayName}?`,
+        `¿Esta seguro que desea eliminar la fundación ${displayName}? Recuerde que se eliminarán todas las publicaciones de la fundación`,
         [
           {text: 'Cancelar'},
           {text: 'Eliminar', onPress: handleDeleteFoundation},
@@ -116,6 +107,39 @@ const FoundationsList = () => {
         .remove()
         .then(() => {
           toastRef.current.show('Publicación eliminada correctamente');
+          db.ref('foundations').on('value', snapshot => {
+            snapshot.forEach(publication => {
+              const q = publication.val();
+              if (q.createdBy === uid) {
+                db.ref(`foundations/${publication.key}`)
+                  .remove()
+                  .then(
+                    toastRef.current.show(
+                      'Publicación eliminada correctamente',
+                    ),
+                  );
+              }
+            });
+          });
+          db.ref('campaigns').on('value', snapshot => {
+            snapshot.forEach(publication => {
+              const q = publication.val();
+              if (q.createdBy === uid) {
+                db.ref(`campaigns/${publication.key}`)
+                  .remove()
+                  .then(
+                    toastRef.current.show(
+                      'Publicación eliminada correctamente',
+                    ),
+                  );
+              }
+            });
+          });
+          storage
+            .ref()
+            .child(`avatar/${uid}`)
+            .delete()
+            .then(toastRef.current.show('Avatar eliminado correctamente'));
         })
         .catch(() => {
           toastRef.current.show(
@@ -135,51 +159,6 @@ const FoundationsList = () => {
         email,
       });
     };
-
-    // const handleFunctions = foundationDelete => {
-    //   console.log('heloo');
-    //   // setModalVisible(true);
-    //   return (
-    //     <Overlay
-    //       isVisible={true}
-    //       setIsVisible={setModalVisible}
-    //       onBackdropPress={() => setModalVisible(false)}
-    //       style={styles.modalStyle}>
-    //       <TouchableOpacity
-    //         style={{flexDirection: 'row'}}
-    //         onPress={() => console.log(displayName)}
-    //         // onPress={() => handleDelete(foundation.item)}
-    //       >
-    //         <Text style={styles.campaignText}>Eliminar fundación</Text>
-    //         <Icon
-    //           name="trash-can-outline"
-    //           type="material-community"
-    //           color="red"
-    //           size={25}
-    //           containerStyle={styles.iconTrash}
-    //           onPress={() => console.log(foundationDelete)}
-    //         />
-    //       </TouchableOpacity>
-    //       <Divider width={0.5} style={{marginBottom: 20}} />
-    //       <View style={{flexDirection: 'row'}}>
-    //         <Text style={styles.foundationText}>Ver fundación</Text>
-    //         <Icon
-    //           name="information"
-    //           type="material-community"
-    //           size={25}
-    //           containerStyle={styles.iconTrash}
-    //           // onPress={handleDelete}
-    //         />
-    //       </View>
-    //       <Divider width={0.5} style={{marginBottom: 20}} />
-    //       <TouchableOpacity
-    //         style={{flexDirection: 'row'}}
-    //         onPress={() => setModalVisible(false)}>
-    //         <Text style={styles.foundationText}>SALIR</Text>
-    //       </TouchableOpacity>
-    //     </Overlay>
-    //   );
-    // };
 
     return (
       <View style={styles.viewFoundation}>
@@ -207,24 +186,6 @@ const FoundationsList = () => {
         <Divider style={styles.divider} width={1} />
       </View>
     );
-  }
-
-  function FooterList(props) {
-    const {isLoading} = props;
-
-    if (isLoading) {
-      return (
-        <View style={styles.loaderHumanitarianNeeds}>
-          <ActivityIndicator size="large" />
-        </View>
-      );
-    } else {
-      return (
-        <View style={styles.notFoundHumanitarianNeeds}>
-          <Text>No quedan fundaciones por cargar</Text>
-        </View>
-      );
-    }
   }
 };
 

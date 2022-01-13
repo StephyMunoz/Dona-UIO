@@ -3,7 +3,7 @@ import {StyleSheet, Text, View} from 'react-native';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {Icon} from 'react-native-elements';
 import Toast from 'react-native-easy-toast';
-import {auth, db} from '../firebase';
+import {db} from '../firebase';
 import ListHumanitarianNeeds from '../components/humanitary_needs/ListHumanitarianNeeds';
 import {useAuth} from '../lib/auth';
 
@@ -11,7 +11,7 @@ const HumanitarianNeeds = () => {
   const navigation = useNavigation();
   const {user} = useAuth();
   const toastRef = useRef();
-  const limitNumber = 4;
+  const limitNumber = 20;
   const [humanitarianNeeds, setHumanitarianNeeds] = useState([]);
   const [totalFoundationNeeds, setTotalFoundationNeeds] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -58,11 +58,8 @@ const HumanitarianNeeds = () => {
       return () => {
         db.ref('foundations').off();
       };
-    }, []),
+    }, [user.uid]),
   );
-
-  console.log('hoymanu', totalFoundationNeeds);
-  console.log('lenghy', humanitarianNeeds.length);
 
   const handleLoadMore = async () => {
     const resultNeeds = [];

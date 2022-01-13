@@ -12,12 +12,14 @@ import {
 import {map} from 'lodash';
 import Map from '../components/Map';
 import {useNavigation} from '@react-navigation/native';
+import Loading from '../components/Loading';
 
 const FoundationView = () => {
   const {user} = useAuth();
   const navigation = useNavigation();
   const [foundationPhone, setFoundationPhone] = useState([]);
   const [avatar, setAvatar] = useState(null);
+  const [foundation, setFoundation] = useState(null);
 
   useEffect(() => {
     const getPhones = async () => {
@@ -28,6 +30,9 @@ const FoundationView = () => {
           phoneList.push(q);
         });
         setFoundationPhone(phoneList);
+      });
+      await db.ref(`users/${user.uid}`).on('value', snapshot => {
+        setFoundation(snapshot.val());
       });
       storage
         .ref()
@@ -63,6 +68,10 @@ const FoundationView = () => {
     );
   };
 
+  if (!foundation) {
+    return <Loading isVisible={true} text="Cargando información" />;
+  }
+
   return (
     <ScrollView>
       <View style={styles.viewBody}>
@@ -86,13 +95,13 @@ const FoundationView = () => {
             onPress={handleInfo}
           />
         </View>
-        {user.description ? (
+        {foundation.description ? (
           <View>
-            <Text style={styles.viewDescription}>{user.description}</Text>
+            <Text style={styles.viewDescription}>{foundation.description}</Text>
           </View>
         ) : (
           <View>
-            {user.description === '' && (
+            {foundation.description === '' && (
               <View>
                 <Text style={styles.messages}>
                   Aún no ingresas la descripción de tu fundación dirigete a tu
@@ -102,14 +111,14 @@ const FoundationView = () => {
             )}
           </View>
         )}
-        {user.location ? (
+        {foundation.location ? (
           <View>
             <Text style={styles.contactTitle}>Ubicación de la fundación</Text>
             <FoundationLocation
-              location={user.location}
-              name={user.displayName}
-              address={user.address}
-              email={user.email}
+              location={foundation.location}
+              name={foundation.displayName}
+              address={foundation.address}
+              email={foundation.email}
             />
           </View>
         ) : (
@@ -161,7 +170,7 @@ const FoundationView = () => {
 
 export default FoundationView;
 
-function FoundationLocation(props) {
+function FoundationLocation() {
   const {user} = useAuth();
 
   const listInfo = [

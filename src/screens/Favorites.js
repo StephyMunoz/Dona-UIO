@@ -36,9 +36,12 @@ const Favorites = props => {
         });
       });
       setFoundations(listFoundations);
+
       setReloadData(false);
-    }, [user.uid, reloadData]),
+    }, [user.uid]),
   );
+
+  // const getFavorites = arrayFavorites => {};
 
   useFocusEffect(
     useCallback(() => {
@@ -52,22 +55,13 @@ const Favorites = props => {
         setFoundationList(foundationFavorite);
       }
       setReloadData(false);
-    }, [foundations, reloadData]),
+    }, [foundations]),
   );
 
-  // if (!foundationList) {
-  //   return <Loading isVisible={true} text="Cargando información" />;
-  // }
-
   if (!foundationList) {
-    // return <NotFoundFoundations />;
     return <ActivityIndicator size="large" />;
   } else if (foundationList && foundationList.length === 0) {
     return <NotFoundFoundations />;
-  }
-
-  if (foundationList) {
-    console.log('foun', foundationList);
   }
 
   return (

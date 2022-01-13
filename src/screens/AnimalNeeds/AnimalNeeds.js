@@ -3,7 +3,7 @@ import {StyleSheet, Text, View} from 'react-native';
 import Toast from 'react-native-easy-toast';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {Icon} from 'react-native-elements';
-import {auth, db} from '../../firebase';
+import {db} from '../../firebase';
 import ListAnimalNeeds from '../../components/animalNeeds/ListAnimalNeeds';
 import {useAuth} from '../../lib/auth';
 
@@ -11,17 +11,15 @@ const AnimalNeeds = () => {
   const navigation = useNavigation();
   const toastRef = useRef();
   const {user} = useAuth();
-  const limitAnimalNeeds = 2;
+  const limitAnimalNeeds = 20;
   const [animalNeeds, setAnimalNeeds] = useState([]);
   const [totalAnimalNeeds, setTotalAnimalNeeds] = useState(0);
-  const [startNeeds, setStartNeeds] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     let total = 0;
     const getTotal = async () => {
       await db.ref('foundations').on('value', snapshot => {
-        // setTotalFoundationNeeds(snapshot.numChildren());
         snapshot.forEach(need => {
           const q = need.val();
           if (q.createdBy === user.uid) {

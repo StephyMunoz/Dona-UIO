@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {Alert, StyleSheet, Text, TextInput, View} from 'react-native';
 import {Button, Icon} from 'react-native-elements';
 import {Formik} from 'formik';
@@ -10,11 +10,9 @@ import Loading from '../Loading';
 
 export default function AddDescriptionForm({isVisible, setIsVisible}) {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [loadingText, setLoadingText] = useState(null);
-  const [userInfo, setUserInfo] = useState(null);
+  const [description, setDescription] = useState(null);
   const [change, setChange] = useState(false);
-  const [showModal, setShowModal] = useState(false);
   const {user} = useAuth();
 
   const schema = yup.object().shape({
@@ -28,22 +26,27 @@ export default function AddDescriptionForm({isVisible, setIsVisible}) {
     setLoadingText('Actualizando descripción');
     try {
       setChange(true);
-      // await db.ref(`users/${user.uid}/name`).set(data.name);
-      // await auth.currentUser.updateProfile(update);
       await db.ref(`users/${user.uid}/description`).set(data.description);
       setLoading(false);
-      setShowModal(false);
       setIsVisible(false);
       Alert.alert(
         'Descripción actualizada',
         'Descripción actualizada exitosamente',
       );
-      // await db.ref(`users/${user.uid}/name`).set(data.name);
       return () => {};
     } catch (e) {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    (async () => {
+      await db.ref(`users/${user.uid}/description`).on('value', snapshot => {
+        setDescription(snapshot.val());
+      });
+    })();
+    setChange(false);
+  }, [change, user.uid]);
 
   return (
     <View style={styles.view}>
@@ -52,7 +55,7 @@ export default function AddDescriptionForm({isVisible, setIsVisible}) {
           <Formik
             validationSchema={schema}
             initialValues={{
-              description: user.description ? user.description : '',
+              description: description ? description : '',
             }}
             onSubmit={onFinish}>
             {({
@@ -72,7 +75,6 @@ export default function AddDescriptionForm({isVisible, setIsVisible}) {
                   onChangeText={handleChange('description')}
                   onBlur={handleBlur('description')}
                   value={values.description}
-                  errorMessage={error}
                   editable
                   multiline
                   numberOfLines={4}
@@ -95,7 +97,6 @@ export default function AddDescriptionForm({isVisible, setIsVisible}) {
                   title="Actualizar descripción"
                   disabled={!isValid}
                   containerStyle={styles.btnContainerLogin}
-                  loading={loading}
                 />
               </>
             )}

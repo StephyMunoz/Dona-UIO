@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {Alert, Dimensions, StyleSheet, Text, View} from 'react-native';
+import {Alert, StyleSheet, Text, View} from 'react-native';
 import {Button, Input} from 'react-native-elements';
 import {Formik} from 'formik';
 import * as yup from 'yup';
@@ -10,13 +10,13 @@ import * as Permissions from 'react-native-permissions';
 import * as Location from 'react-native-location';
 import MapView from 'react-native-maps';
 
-const widthScreen = Dimensions.get('window').width;
-
 export default function AddLocation({isVisible, setIsVisible, toastRef}) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [change, setChange] = useState(false);
   const [isVisibleMap, setIsVisibleMap] = useState(false);
+  const [address, setAddress] = useState(null);
+  const [location, setLocation] = useState(null);
   const [locationFoundation, setLocationFoundation] = useState(null);
   const {user} = useAuth();
   // const { toastRef, setIsLoading, navigation } = ;
@@ -26,13 +26,17 @@ export default function AddLocation({isVisible, setIsVisible, toastRef}) {
   });
 
   const onFinish = async data => {
-    if (locationFoundation) {
+    if (locationFoundation || location) {
       setLoading(true);
       setError(null);
       try {
         setChange(true);
         await db.ref(`users/${user.uid}/address`).set(data.address);
-        await db.ref(`users/${user.uid}/location`).set(locationFoundation);
+        if (!locationFoundation) {
+          await db.ref(`users/${user.uid}/location`).set(location);
+        } else {
+          await db.ref(`users/${user.uid}/location`).set(locationFoundation);
+        }
         setLoading(false);
         setIsVisible(false);
         Alert.alert(
@@ -49,13 +53,27 @@ export default function AddLocation({isVisible, setIsVisible, toastRef}) {
     }
   };
 
+  useEffect(() => {
+    (async () => {
+      await db.ref(`users/${user.uid}/location`).on('value', snapshot => {
+        if (snapshot.val() !== null) {
+          setLocation(snapshot.val());
+        }
+      });
+      await db.ref(`users/${user.uid}/address`).on('value', snapshot => {
+        setAddress(snapshot.val());
+      });
+    })();
+    setChange(false);
+  }, [change, user.uid]);
+
   return (
     <View style={styles.view}>
       <Modal isVisible={isVisible} setIsVisible={setIsVisible}>
         <View style={styles.view}>
           <Formik
             validationSchema={schema}
-            initialValues={{address: ''}}
+            initialValues={{address: address ? address : ''}}
             onSubmit={onFinish}>
             {({
               handleChange,
@@ -69,7 +87,6 @@ export default function AddLocation({isVisible, setIsVisible, toastRef}) {
                 <Input
                   name="address"
                   placeholder="Ingresa la dirección de la fundación"
-                  // containerStyle={styles.inputForm}
                   onChangeText={handleChange('address')}
                   onBlur={handleBlur('address')}
                   value={values.address}
@@ -77,7 +94,9 @@ export default function AddLocation({isVisible, setIsVisible, toastRef}) {
                   rightIcon={{
                     type: 'material-community',
                     name: 'google-maps',
-                    color: locationFoundation ? '#00a680' : '#c2c2c2',
+                    color:
+                      location || locationFoundation ? '#00a680' : '#c2c2c2',
+                    size: 35,
                     onPress: () => setIsVisibleMap(true),
                   }}
                 />
@@ -122,7 +141,7 @@ function Map(props) {
       );
       if (resultPermissions === 'denied') {
         toastRef.current.show(
-          'Tienes que aceptar los permisos de localizacion para crear un Foundatione',
+          'Tienes que aceptar los permisos de localizacion para agregar ubicación de la fundación',
           3000,
         );
       } else if (resultPermissions === 'granted') {
@@ -138,10 +157,6 @@ function Map(props) {
     })();
   }, [toastRef]);
 
-  // if (location) {
-  //   console.log('location', location);
-  // }
-
   const confirmLocation = () => {
     setLocationFoundation(location);
     toastRef.current.show('Localizacion guardada correctamente');
@@ -154,13 +169,13 @@ function Map(props) {
         {location && (
           <MapView
             style={styles.mapStyle}
-            initialRegion={location}
-            // initialRegion={{
-            //   latitude: -0.2232645,
-            //   longitude: -78.5182572,
-            //   latitudeDelta: 0.001,
-            //   longitudeDelta: 0.001,
-            // }}
+            // initialRegion={location}
+            initialRegion={{
+              latitude: -0.2232645,
+              longitude: -78.5182572,
+              latitudeDelta: 0.001,
+              longitudeDelta: 0.001,
+            }}
             showsUserLocation={true}
             onRegionChange={region => setLocation(region)}>
             <MapView.Marker

@@ -2,7 +2,7 @@ import React, {useCallback, useRef, useState} from 'react';
 import {StyleSheet, Text, View} from 'react-native';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {Icon} from 'react-native-elements';
-import {auth, db} from '../firebase';
+import {db} from '../firebase';
 import ListAnimalCampaigns from '../components/campaigns/ListAnimalCampaigns';
 import Toast from 'react-native-easy-toast';
 import {useAuth} from '../lib/auth';
@@ -14,7 +14,7 @@ const AnimalCareCampaigns = () => {
   const [animalCampaigns, setAnimalCampaigns] = useState([]);
   const [totalCampaigns, setTotalCampaigns] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
-  const limitCampaigns = 2;
+  const limitCampaigns = 20;
 
   useFocusEffect(
     useCallback(() => {
@@ -29,8 +29,9 @@ const AnimalCareCampaigns = () => {
         });
       });
 
-      db.ref(`campaigns`)
+      db.ref('campaigns')
         .orderByChild('updatedAt')
+        .limitToLast(limitCampaigns)
         .on('value', snapshot => {
           snapshot.forEach(campaign => {
             const q = campaign.val();
@@ -48,7 +49,6 @@ const AnimalCareCampaigns = () => {
 
   const handleLoadMore = async () => {
     const resultCampaigns = [];
-    // setStartNeeds(foundationNeeds[foundationNeeds.length - 1]);
 
     if (animalCampaigns.length <= totalCampaigns) {
       setIsLoading(true);

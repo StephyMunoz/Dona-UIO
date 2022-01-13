@@ -17,12 +17,10 @@ import ChangePasswordForm from './ChangePasswordForm';
 import {launchImageLibrary} from 'react-native-image-picker';
 import Loading from '../Loading';
 import Toast from 'react-native-easy-toast';
-import {useNavigation} from '@react-navigation/native';
 
 const ProfileOptions = () => {
   const {user, logout} = useAuth();
   const toastRef = useRef();
-  const navigation = useNavigation();
   const [showModal, setShowModal] = useState(false);
   const [showModalEmail, setShowModalEmail] = useState(false);
   const [showModalPassword, setShowModalPassword] = useState(false);
@@ -39,6 +37,14 @@ const ProfileOptions = () => {
     })();
     setChange(false);
   }, [change, user]);
+
+  if (user && user.emailVerified === false) {
+    Alert.alert(
+      'Cuenta no verificada',
+      'Revisa tu badeja de Correo No Deseado o dirígete a Perfil para reenviar el link de activación. No podrás acceder a las funcionalidades completas',
+      [{text: 'Entendido'}],
+    );
+  }
 
   const options = {
     title: 'Seleccion de avatar',
@@ -114,7 +120,6 @@ const ProfileOptions = () => {
   };
 
   const handleSendEmail = async () => {
-    console.log('helo', auth.currentUser);
     await auth.currentUser
       .sendEmailVerification()
       .then(
@@ -122,7 +127,6 @@ const ProfileOptions = () => {
           'Se ha reenviado un email de verificación a tu correo electrónico',
         ),
         setLoading(false),
-        navigation.navigate('home'),
       );
   };
 
