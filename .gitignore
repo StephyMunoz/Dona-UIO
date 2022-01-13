@@ -21,6 +21,9 @@ DerivedData
 *.ipa
 *.xcuserstate
 
+
+.env
+.env.local
 # Android/IntelliJ
 #
 build/
@@ -59,4 +62,3 @@ buck-out/
 # CocoaPods
 /ios/Pods/
 
-.env

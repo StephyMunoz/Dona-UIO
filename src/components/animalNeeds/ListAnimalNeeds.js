@@ -18,7 +18,12 @@ import {db} from '../../firebase';
 
 const screenWidth = Dimensions.get('window').width;
 
-const ListAnimalNeeds = ({animalNeeds, isLoading, toastRef}) => {
+const ListAnimalNeeds = ({
+  animalNeeds,
+  isLoading,
+  toastRef,
+  handleLoadMore,
+}) => {
   const navigation = useNavigation();
 
   return (
@@ -35,7 +40,7 @@ const ListAnimalNeeds = ({animalNeeds, isLoading, toastRef}) => {
           )}
           keyExtractor={(item, index) => index.toString()}
           onEndReachedThreshold={0.5}
-          // onEndReached={handleLoadMore}
+          onEndReached={handleLoadMore}
           ListFooterComponent={<FooterList isLoading={isLoading} />}
         />
       ) : (
@@ -100,7 +105,7 @@ function AnimalNeed({animalNeed, navigation, toastRef}) {
     setIsLoading(true);
     setLoadingText('Eliminando requerimiento');
     let needFoundationKey = '';
-    db.ref('foundations').on('value', snapshot => {
+    db.ref(`foundations/${createdBy}`).on('value', snapshot => {
       snapshot.forEach(needItem => {
         if (
           needItem.val().createdBy === createdBy &&
@@ -158,7 +163,8 @@ function AnimalNeed({animalNeed, navigation, toastRef}) {
         <Carousel arrayImages={images} height={250} width={screenWidth - 20} />
         <Text style={styles.date}>
           Publicado:{'  '}
-          {new Date(updatedAt).toLocaleDateString()}{' '}
+          {new Date(updatedAt).getDate()}/{new Date(updatedAt).getMonth() + 1}/
+          {new Date(updatedAt).getFullYear()}{' '}
           {new Date(updatedAt).toLocaleTimeString()}
         </Text>
         {food !== '' && (

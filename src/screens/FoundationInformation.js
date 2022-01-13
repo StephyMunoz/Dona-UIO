@@ -125,7 +125,7 @@ function FoundationLocation(props) {
       text: address,
       iconName: 'map-marker',
       iconType: 'material-community',
-      action: null,
+      action: () => goToLocation(location),
     },
     {
       text: email,
@@ -134,6 +134,12 @@ function FoundationLocation(props) {
       action: () => handleEmailPress(email),
     },
   ];
+
+  const goToLocation = async loc => {
+    await Linking.openURL(
+      `google.navigation:q=${loc.latitude}+${loc.longitude}`,
+    );
+  };
 
   const handleEmailPress = async emailChosen => {
     await Linking.openURL(`mailto:${emailChosen}`);
@@ -150,6 +156,7 @@ function FoundationLocation(props) {
             type={item.iconType}
             color="#00a680"
             onPress={item.action}
+            size={35}
           />
           <ListItem.Content>
             <ListItem.Title>{item.text}</ListItem.Title>

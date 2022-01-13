@@ -1,19 +1,40 @@
-import React, {useCallback, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {StyleSheet, Text, View} from 'react-native';
 import Toast from 'react-native-easy-toast';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {Icon} from 'react-native-elements';
 import {auth, db} from '../../firebase';
 import ListAnimalNeeds from '../../components/animalNeeds/ListAnimalNeeds';
+import {useAuth} from '../../lib/auth';
 
 const AnimalNeeds = () => {
   const navigation = useNavigation();
+  const toastRef = useRef();
+  const {user} = useAuth();
+  const limitAnimalNeeds = 2;
   const [animalNeeds, setAnimalNeeds] = useState([]);
   const [totalAnimalNeeds, setTotalAnimalNeeds] = useState(0);
   const [startNeeds, setStartNeeds] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const limitNeeds = 5;
-  const toastRef = useRef();
+
+  useEffect(() => {
+    let total = 0;
+    const getTotal = async () => {
+      await db.ref('foundations').on('value', snapshot => {
+        // setTotalFoundationNeeds(snapshot.numChildren());
+        snapshot.forEach(need => {
+          const q = need.val();
+          if (q.createdBy === user.uid) {
+            setTotalAnimalNeeds((total = total + 1));
+          }
+        });
+      });
+    };
+    getTotal();
+    return () => {
+      db.ref('foundations').off();
+    };
+  }, [user.uid]);
 
   useFocusEffect(
     useCallback(() => {
@@ -21,62 +42,53 @@ const AnimalNeeds = () => {
 
       db.ref('foundations')
         .orderByChild('updatedAt')
-        .limitToLast(5)
+        .limitToLast(limitAnimalNeeds)
         .on('value', snapshot => {
           snapshot.forEach(need => {
             const q = need.val();
-            if (q.createdBy === auth.currentUser.uid) {
+            if (q.createdBy === user.uid) {
               resultAnimalNeeds.push(q);
             }
           });
           setAnimalNeeds(resultAnimalNeeds.reverse());
         });
 
-      // db.ref(`animal_needs/${auth.currentUser.uid}`)
-      //   // .orderBy('createAt', 'desc')
-      //   .limit(limitNeeds)
-      //   .get()
-      //   .then(response => {
-      //     setStartNeeds(response.docs[response.docs.length - 1]);
-      //
-      //     response.forEach(doc => {
-      //       const need = doc.data();
-      //       need.id = doc.id;
-      //       resultAnimalNeeds.push(need);
-      //     });
-      //     setAnimalNeeds(resultAnimalNeeds);
-      //   });
       return () => {
         db.ref('foundations').off();
       };
-    }, []),
+    }, [user.uid]),
   );
 
-  // const handleLoadMore = () => {
-  //   const resultAnimalNeeds = [];
-  //   animalNeeds.length < totalAnimalNeeds && setIsLoading(true);
-  //
-  //   db.ref(`animal_needs/${auth.currentUser.uid}`)
-  //     // .orderBy('createAt', 'desc')
-  //     .startAfter(startNeeds.data())
-  //     .limit(limitNeeds)
-  //     .get()
-  //     .then(response => {
-  //       if (response.docs.length > 0) {
-  //         setStartNeeds(response.docs[response.docs.length - 1]);
-  //       } else {
-  //         setIsLoading(false);
-  //       }
-  //
-  //       response.forEach(doc => {
-  //         const need = doc.data();
-  //         need.id = doc.id;
-  //         resultAnimalNeeds.push(need);
-  //       });
-  //
-  //       setAnimalNeeds([...animalNeeds, ...resultAnimalNeeds]);
-  //     });
-  // };
+  const handleLoadMore = async () => {
+    const resultNeeds = [];
+
+    if (animalNeeds.length <= totalAnimalNeeds) {
+      setIsLoading(true);
+      await db
+        .ref(`foundations/${user.uid}`)
+        .orderByChild('updatedAt')
+        .limitToLast(limitAnimalNeeds)
+        .endBefore(animalNeeds[animalNeeds.length - 1].updatedAt)
+        .on('value', snapshot => {
+          if (snapshot.numChildren() > 0) {
+            snapshot.forEach(need => {
+              const q = need.val();
+              if (q.createdBy === user.uid) {
+                setIsLoading(true);
+                resultNeeds.push(q);
+              }
+            });
+          } else {
+            setIsLoading(false);
+          }
+        });
+      setAnimalNeeds([...animalNeeds, ...resultNeeds.reverse()]);
+      setIsLoading(false);
+    }
+    return () => {
+      db.ref('foundations').off();
+    };
+  };
 
   return (
     <View style={styles.viewBody}>
@@ -85,7 +97,7 @@ const AnimalNeeds = () => {
       ) : (
         <ListAnimalNeeds
           animalNeeds={animalNeeds}
-          // handleLoadMore={handleLoadMore}
+          handleLoadMore={handleLoadMore}
           isLoading={isLoading}
           toastRef={toastRef}
         />

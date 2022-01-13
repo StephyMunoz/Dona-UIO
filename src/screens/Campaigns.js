@@ -21,7 +21,7 @@ const Campaigns = () => {
       const resultAnimalCampaigns = [];
 
       const getCampaigns = async () => {
-        db.ref(`campaigns`)
+        db.ref('campaigns')
           .orderByChild('updatedAt')
           .limitToFirst(3)
           .on('value', snapshot => {
@@ -35,7 +35,7 @@ const Campaigns = () => {
       getCampaigns();
 
       return () => {
-        db.ref(`campaigns`).off();
+        db.ref('campaigns').off();
       };
     }, []),
   );

@@ -35,18 +35,29 @@ const EditAnimalNeed = props => {
   useEffect(() => {
     db.ref('foundations').on('value', snapshot => {
       snapshot.forEach(needItem => {
-        if (
-          needItem.val().createdBy === createdBy &&
-          needItem.val().id === id
-        ) {
+        if (needItem.val().id === id) {
           setGetKey(needItem.key);
         }
       });
     });
+    return () => {
+      db.ref('foundations').off();
+    };
   }, [id, createdBy]);
 
   if (!getKey) {
-    return <Loading isVisible={true} text="Cargando formulario" />;
+    db.ref('foundations').on('value', snapshot => {
+      snapshot.forEach(needItem => {
+        if (needItem.val().id === id) {
+          setGetKey(needItem.key);
+        }
+      });
+    });
+    return (
+      db.ref('foundations') && (
+        <Loading isVisible={true} text="Cargando formulario" />
+      )
+    );
   }
 
   const schema = yup.object().shape({
@@ -122,8 +133,7 @@ const EditAnimalNeed = props => {
   };
 
   const uploadImageStorage = async () => {
-    const imageBlob = [];
-
+    const imageWithBlob = [];
     await Promise.all(
       map(imagesSelected, async image => {
         const response = await fetch(image);
@@ -134,13 +144,13 @@ const EditAnimalNeed = props => {
             .ref(`humanitarian_needs/${result.metadata.name}`)
             .getDownloadURL()
             .then(photoUrl => {
-              imageBlob.push(photoUrl);
+              imageWithBlob.push(photoUrl);
             });
         });
       }),
     );
 
-    return imageBlob;
+    return imageWithBlob;
   };
 
   const removeImage = image => {

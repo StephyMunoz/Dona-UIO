@@ -108,7 +108,7 @@ const AnimalCampaignForm = () => {
       map(imagesSelected, async image => {
         const response = await fetch(image);
         const blob = await response.blob();
-        const ref = storage.ref(`campaigns`).child(uuid());
+        const ref = storage.ref('campaigns').child(uuid());
         await ref.put(blob).then(async result => {
           await storage
             .ref(`campaigns/${result.metadata.name}`)
@@ -189,7 +189,7 @@ const AnimalCampaignForm = () => {
               <View style={styles.textInput}>
                 <TextInput
                   name="campaignDescription"
-                  placeholderTextColor="#grey"
+                  placeholderTextColor="grey"
                   style={styles.textPlaceholder}
                   placeholder="Descripción de la campaña"
                   onChangeText={handleChange('campaignDescription')}

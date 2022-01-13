@@ -21,13 +21,20 @@ import Toast from 'react-native-easy-toast';
 import Loading from './Loading';
 
 const EditCampaign = props => {
-  const {id, images, campaignDescription, other, title, createdBy, createdAt} =
-    props.route.params;
+  const {
+    id,
+    images,
+    campaignDescription,
+    other,
+    title,
+    createdBy,
+    createdAt,
+    updatedAt,
+  } = props.route.params;
   const toastRef = useRef();
   const {user} = useAuth();
   const navigation = useNavigation();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [imagesSelected, setImagesSelected] = useState([...images]);
   const [loadingText, setLoadingText] = useState(false);
   const [getKey, setGetKey] = useState(null);
@@ -40,7 +47,10 @@ const EditCampaign = props => {
         }
       });
     });
-  }, [id]);
+    return () => {
+      db.ref('campaigns').off();
+    };
+  }, [id, createdBy]);
 
   const schema = yup.object().shape({
     title: yup.string().required('Ingrese un título'),
@@ -59,6 +69,16 @@ const EditCampaign = props => {
   };
 
   if (!getKey) {
+    db.ref('campaigns').on('value', snapshot => {
+      snapshot.forEach(needItem => {
+        if (needItem.val().id === id) {
+          setGetKey(needItem.key);
+        }
+      });
+    });
+    // return () => {
+    //   db.ref('campaigns').off();
+    // };
     return <Loading isVisible={true} text="Cargando formulario" />;
   }
 
@@ -68,7 +88,6 @@ const EditCampaign = props => {
       toastRef.current.show('Seleccione al menos imagen para continuar');
     } else {
       setLoading(true);
-      setError(null);
       try {
         setLoading(true);
         setLoadingText('Actualizando información');
@@ -125,7 +144,7 @@ const EditCampaign = props => {
       map(imagesSelected, async image => {
         const response = await fetch(image);
         const blob = await response.blob();
-        const ref = storage.ref(`campaigns`).child(uuid());
+        const ref = storage.ref('campaigns').child(uuid());
         await ref.put(blob).then(async result => {
           await storage
             .ref(`campaigns/${result.metadata.name}`)

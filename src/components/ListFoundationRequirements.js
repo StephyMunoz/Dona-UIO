@@ -124,8 +124,8 @@ function FoundationNeed({foundationNeed, navigation, toastRef}) {
     );
   };
   const handlePublication = () => {
-    setLoading(true);
     setLoadingText('Eliminando publicación');
+    setLoading(true);
     let needKey = '';
     db.ref('foundations').on('value', snapshot => {
       snapshot.forEach(need => {
@@ -140,7 +140,7 @@ function FoundationNeed({foundationNeed, navigation, toastRef}) {
         .remove()
         .then(() => {
           setLoading(false);
-          toastRef.current.show('Publicación eliminada correctamente');
+          toastRef.current.show('Publicación eliminada exitosamente');
         })
         .catch(() => {
           setLoading(false);
@@ -313,7 +313,8 @@ function FoundationNeed({foundationNeed, navigation, toastRef}) {
       <Carousel arrayImages={images} height={250} width={screenWidth} />
       <Text style={styles.date}>
         Publicado:{'  '}
-        {new Date(updatedAt).toLocaleDateString()}{' '}
+        {new Date(updatedAt).getDate()}/{new Date(updatedAt).getMonth() + 1}/
+        {new Date(updatedAt).getFullYear()}{' '}
         {new Date(updatedAt).toLocaleTimeString()}
       </Text>
 

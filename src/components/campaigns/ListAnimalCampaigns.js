@@ -18,7 +18,12 @@ import Loading from '../Loading';
 
 const screenWidth = Dimensions.get('window').width;
 
-const ListAnimalCampaigns = ({animalCampaigns, isLoading, toastRef}) => {
+const ListAnimalCampaigns = ({
+  animalCampaigns,
+  isLoading,
+  toastRef,
+  handleLoadMore,
+}) => {
   const navigation = useNavigation();
 
   return (
@@ -35,7 +40,7 @@ const ListAnimalCampaigns = ({animalCampaigns, isLoading, toastRef}) => {
           )}
           keyExtractor={(item, index) => index.toString()}
           onEndReachedThreshold={0.5}
-          // onEndReached={handleLoadMore}
+          onEndReached={handleLoadMore}
           ListFooterComponent={
             <FooterList isLoading={isLoading} navigation={navigation} />
           }
@@ -157,7 +162,8 @@ function AnimalCampaign({animalCampaign, navigation, toastRef}) {
         <Carousel arrayImages={images} height={250} width={screenWidth - 20} />
         <Text style={styles.date}>
           Publicado:{'  '}
-          {new Date(updatedAt).toLocaleDateString()}{' '}
+          {new Date(updatedAt).getDate()}/{new Date(updatedAt).getMonth() + 1}/
+          {new Date(updatedAt).getFullYear()}{' '}
           {new Date(updatedAt).toLocaleTimeString()}
         </Text>
         <View>
@@ -203,7 +209,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   viewAnimalCampaign: {
-    margin: 10,
+    margin: 20,
   },
   date: {
     color: 'grey',

@@ -11,7 +11,7 @@ const HumanitarianNeeds = () => {
   const navigation = useNavigation();
   const {user} = useAuth();
   const toastRef = useRef();
-  const limitNumber = 2;
+  const limitNumber = 4;
   const [humanitarianNeeds, setHumanitarianNeeds] = useState([]);
   const [totalFoundationNeeds, setTotalFoundationNeeds] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -20,6 +20,7 @@ const HumanitarianNeeds = () => {
     let total = 0;
     const getTotal = async () => {
       await db.ref('foundations').on('value', snapshot => {
+        // setTotalFoundationNeeds(snapshot.numChildren());
         snapshot.forEach(need => {
           const q = need.val();
           if (q.createdBy === user.uid) {
@@ -46,7 +47,7 @@ const HumanitarianNeeds = () => {
           .on('value', snapshot => {
             snapshot.forEach(need => {
               const q = need.val();
-              if (q.createdBy === auth.currentUser.uid) {
+              if (q.createdBy === user.uid) {
                 resultHumanitarianNeeds.push(q);
               }
             });
@@ -69,26 +70,22 @@ const HumanitarianNeeds = () => {
     if (humanitarianNeeds.length <= totalFoundationNeeds) {
       setIsLoading(true);
       await db
-        .ref('foundations')
+        .ref(`foundations/${user.uid}`)
         .orderByChild('updatedAt')
         .limitToLast(limitNumber)
         .endBefore(humanitarianNeeds[humanitarianNeeds.length - 1].updatedAt)
         .on('value', snapshot => {
-          // if (snapshot.numChildren() > 0) {
-          snapshot.forEach(need => {
-            const q = need.val();
-            if (q.createdBy === user.uid) {
-              setIsLoading(true);
-              resultNeeds.push(q);
-              console.log('hey');
-              console.log('hey', q);
-            }
-          });
-
-          // } else {
-          //   console.log('hiii');
-          //   setIsLoading(false);
-          // }
+          if (snapshot.numChildren() > 0) {
+            snapshot.forEach(need => {
+              const q = need.val();
+              if (q.createdBy === user.uid) {
+                setIsLoading(true);
+                resultNeeds.push(q);
+              }
+            });
+          } else {
+            setIsLoading(false);
+          }
         });
       setHumanitarianNeeds([...humanitarianNeeds, ...resultNeeds.reverse()]);
       setIsLoading(false);

@@ -108,7 +108,7 @@ const HumanitarianNeedsForm = () => {
       map(imagesSelected, async image => {
         const response = await fetch(image);
         const blob = await response.blob();
-        const ref = storage.ref(`humanitarian_needs`).child(uuid());
+        const ref = storage.ref('humanitarian_needs').child(uuid());
         await ref.put(blob).then(async result => {
           await storage
             .ref(`humanitarian_needs/${result.metadata.name}`)

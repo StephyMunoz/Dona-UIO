@@ -5,23 +5,36 @@ import {Icon} from 'react-native-elements';
 import {auth, db} from '../firebase';
 import ListAnimalCampaigns from '../components/campaigns/ListAnimalCampaigns';
 import Toast from 'react-native-easy-toast';
+import {useAuth} from '../lib/auth';
 
 const AnimalCareCampaigns = () => {
   const navigation = useNavigation();
   const {toastRef} = useRef();
+  const {user} = useAuth();
   const [animalCampaigns, setAnimalCampaigns] = useState([]);
+  const [totalCampaigns, setTotalCampaigns] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const limitCampaigns = 2;
 
   useFocusEffect(
     useCallback(() => {
       const resultAnimalCampaigns = [];
+      let total = 0;
+
+      db.ref('campaigns').on('value', snapshot => {
+        snapshot.forEach(campaign => {
+          if (campaign.val().createdBy === user.uid) {
+            setTotalCampaigns(total + 1);
+          }
+        });
+      });
 
       db.ref(`campaigns`)
         .orderByChild('updatedAt')
         .on('value', snapshot => {
           snapshot.forEach(campaign => {
             const q = campaign.val();
-            if (q.createdBy === auth.currentUser.uid) {
+            if (q.createdBy === user.uid) {
               resultAnimalCampaigns.push(q);
             }
           });
@@ -30,8 +43,37 @@ const AnimalCareCampaigns = () => {
       return () => {
         db.ref('campaigns').off();
       };
-    }, []),
+    }, [user.uid]),
   );
+
+  const handleLoadMore = async () => {
+    const resultCampaigns = [];
+    // setStartNeeds(foundationNeeds[foundationNeeds.length - 1]);
+
+    if (animalCampaigns.length <= totalCampaigns) {
+      setIsLoading(true);
+      await db
+        .ref('campaigns')
+        .orderByChild('updatedAt')
+        .limitToLast(limitCampaigns)
+        .endBefore(animalCampaigns[animalCampaigns.length - 1].updatedAt)
+        .on('value', snapshot => {
+          if (snapshot.numChildren() > 0) {
+            snapshot.forEach(need => {
+              const q = need.val();
+              resultCampaigns.push(q);
+            });
+            setIsLoading(false);
+          } else {
+            setIsLoading(false);
+          }
+        });
+      setAnimalCampaigns([...animalCampaigns, ...resultCampaigns.reverse()]);
+    }
+    return () => {
+      db.ref('foundations').off();
+    };
+  };
 
   return (
     <View style={styles.viewBody}>
@@ -40,7 +82,7 @@ const AnimalCareCampaigns = () => {
       ) : (
         <ListAnimalCampaigns
           animalCampaigns={animalCampaigns}
-          // handleLoadMore={handleLoadMore}
+          handleLoadMore={handleLoadMore}
           isLoading={isLoading}
           toastRef={toastRef}
         />

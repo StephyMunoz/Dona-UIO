@@ -36,8 +36,8 @@ const Home = () => {
           .orderByChild('updatedAt')
           .limitToLast(limitNeed)
           .on('value', snapshot => {
-            snapshot.forEach(need => {
-              const q = need.val();
+            snapshot.forEach(need1 => {
+              const q = need1.val();
               resultFoundationNeeds.push(q);
             });
             setFoundationNeeds(resultFoundationNeeds.reverse());
@@ -50,6 +50,7 @@ const Home = () => {
       };
     }, []),
   );
+  console.log(totalNeeds);
 
   const handleLoadMore = async () => {
     const resultNeeds = [];
@@ -60,7 +61,6 @@ const Home = () => {
         .ref('foundations')
         .orderByChild('updatedAt')
         .limitToLast(limitNeed)
-        // .startAfter(startNeeds.updatedAt)
         .endBefore(foundationNeeds[foundationNeeds.length - 1].updatedAt)
         .on('value', snapshot => {
           if (snapshot.numChildren() > 0) {

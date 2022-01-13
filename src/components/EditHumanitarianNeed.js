@@ -36,16 +36,29 @@ const EditHumanitarianNeed = props => {
   useEffect(() => {
     db.ref('foundations').on('value', snapshot => {
       snapshot.forEach(needItem => {
+        if (
+          needItem.val().id === id &&
+          needItem.val().createdBy === createdBy
+        ) {
+          setGetKey(needItem.key);
+        }
+      });
+    });
+    return () => {
+      db.ref('foundations').off();
+    };
+  }, [id, createdBy]);
+
+  console.log('props', getKey);
+
+  if (!getKey) {
+    db.ref('foundations').on('value', snapshot => {
+      snapshot.forEach(needItem => {
         if (needItem.val().id === id) {
           setGetKey(needItem.key);
         }
       });
     });
-  }, [id]);
-
-  console.log('props', getKey);
-
-  if (!getKey) {
     return <Loading isVisible={true} text="Cargando formulario" />;
   }
 

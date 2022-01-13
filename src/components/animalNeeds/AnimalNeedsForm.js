@@ -26,7 +26,6 @@ const AnimalNeedsForm = () => {
   const navigation = useNavigation();
   const [loading, setLoading] = useState(false);
   const [loadingText, setLoadingText] = useState(false);
-  const [error, setError] = useState(null);
   const [imagesSelected, setImagesSelected] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -56,7 +55,6 @@ const AnimalNeedsForm = () => {
       try {
         setIsLoading(true);
         await uploadImageStorage().then(response => {
-          // const currentDate = new Date.now();
           db.ref('foundations')
             .push()
             .set({
@@ -89,12 +87,10 @@ const AnimalNeedsForm = () => {
 
   const handleLaunchCamera = async () => {
     await launchImageLibrary(options, response => {
-      console.log('Response = ', response.assets);
-
       if (response.didCancel) {
-        console.log('User cancelled image picker');
+        toastRef.current.show('Selección de imagenes cancelada');
       } else if (response.errorCode) {
-        console.log('ImagePicker Error: ', response.errorCode);
+        toastRef.current.show('Ha ocurrido un error');
       } else {
         setImagesSelected([...imagesSelected, response.assets[0].uri]);
       }
@@ -108,7 +104,7 @@ const AnimalNeedsForm = () => {
       map(imagesSelected, async image => {
         const response = await fetch(image);
         const blob = await response.blob();
-        const ref = storage.ref(`animal_needs`).child(uuid());
+        const ref = storage.ref('animal_needs').child(uuid());
         await ref.put(blob).then(async result => {
           await storage
             .ref(`animal_needs/${result.metadata.name}`)
@@ -174,7 +170,6 @@ const AnimalNeedsForm = () => {
                 onChangeText={handleChange('title')}
                 onBlur={handleBlur('title')}
                 value={values.title}
-                errorMessage={error}
                 rightIcon={
                   <Icon
                     type="font-awesome"
@@ -193,12 +188,11 @@ const AnimalNeedsForm = () => {
                 <TextInput
                   name="food"
                   placeholder="Ingrese información relacionada con el alimento balanceado"
-                  placeholderTextColor="#c1c1c1"
+                  placeholderTextColor="grey"
                   style={styles.textPlaceholder}
                   onChangeText={handleChange('food')}
                   onBlur={handleBlur('food')}
                   value={values.food}
-                  errorMessage={error}
                   editable
                   multiline
                   numberOfLines={3}
@@ -227,12 +221,11 @@ const AnimalNeedsForm = () => {
                 <TextInput
                   name="medicine"
                   placeholder="Ingrese información relacionada al medicamento (opcional)"
-                  placeholderTextColor="#c1c1c1"
+                  placeholderTextColor="grey"
                   style={styles.textPlaceholder}
                   onChangeText={handleChange('medicine')}
                   onBlur={handleBlur('medicine')}
                   value={values.medicine}
-                  errorMessage={error}
                   editable
                   multiline
                   numberOfLines={4}
@@ -247,13 +240,12 @@ const AnimalNeedsForm = () => {
               <View style={styles.textInput}>
                 <TextInput
                   name="other"
-                  placeholderTextColor="#c1c1c1"
+                  placeholderTextColor="grey"
                   style={styles.textPlaceholder}
                   placeholder="En este apartado puede incluir otras necesidades de la fundación (opcional)"
                   onChangeText={handleChange('other')}
                   onBlur={handleBlur('other')}
                   value={values.other}
-                  errorMessage={error}
                   editable
                   multiline
                   numberOfLines={3}
@@ -293,7 +285,7 @@ const AnimalNeedsForm = () => {
               <Button
                 onPress={handleSubmit}
                 title="Ingresar requerimiento"
-                // disabled={!isValid}
+                disabled={!isValid}
                 containerStyle={styles.btnContainerLogin}
                 loading={isLoading}
               />

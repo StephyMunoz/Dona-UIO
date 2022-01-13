@@ -16,7 +16,6 @@ export default function AddLocation({isVisible, setIsVisible, toastRef}) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [change, setChange] = useState(false);
-  const [showModal, setShowModal] = useState(false);
   const [isVisibleMap, setIsVisibleMap] = useState(false);
   const [locationFoundation, setLocationFoundation] = useState(null);
   const {user} = useAuth();
@@ -32,8 +31,6 @@ export default function AddLocation({isVisible, setIsVisible, toastRef}) {
       setError(null);
       try {
         setChange(true);
-        // await db.ref(`users/${user.uid}/name`).set(data.name);
-        // await auth.currentUser.updateProfile(update);
         await db.ref(`users/${user.uid}/address`).set(data.address);
         await db.ref(`users/${user.uid}/location`).set(locationFoundation);
         setLoading(false);
@@ -42,7 +39,6 @@ export default function AddLocation({isVisible, setIsVisible, toastRef}) {
           'Ubicación actualizada',
           'Ubicación actualizada exitosamente',
         );
-        // await db.ref(`users/${user.uid}/name`).set(data.name);
       } catch (e) {
         setLoading(false);
       }
@@ -129,11 +125,8 @@ function Map(props) {
           'Tienes que aceptar los permisos de localizacion para crear un Foundatione',
           3000,
         );
-        console.log('perimos rechazado');
       } else if (resultPermissions === 'granted') {
         const loc = await Location.getLatestLocation();
-
-        console.log('location inside', loc);
 
         setLocation({
           latitude: loc.latitude,
@@ -161,13 +154,13 @@ function Map(props) {
         {location && (
           <MapView
             style={styles.mapStyle}
-            // initialRegion={location}
-            initialRegion={{
-              latitude: -0.2232645,
-              longitude: -78.5182572,
-              latitudeDelta: 0.001,
-              longitudeDelta: 0.001,
-            }}
+            initialRegion={location}
+            // initialRegion={{
+            //   latitude: -0.2232645,
+            //   longitude: -78.5182572,
+            //   latitudeDelta: 0.001,
+            //   longitudeDelta: 0.001,
+            // }}
             showsUserLocation={true}
             onRegionChange={region => setLocation(region)}>
             <MapView.Marker

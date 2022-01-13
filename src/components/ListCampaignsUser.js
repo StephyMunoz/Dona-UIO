@@ -291,7 +291,8 @@ function AnimalCampaign({animalCampaign, navigation, toastRef}) {
       <Carousel arrayImages={images} height={200} width={screenWidth} />
       <Text style={styles.date}>
         Publicado:{'  '}
-        {new Date(updatedAt).toLocaleDateString()}{' '}
+        {new Date(updatedAt).getDate()}/{new Date(updatedAt).getMonth() + 1}/
+        {new Date(updatedAt).getFullYear()}{' '}
         {new Date(updatedAt).toLocaleTimeString()}
       </Text>
       <Text style={styles.title}>{title}</Text>
