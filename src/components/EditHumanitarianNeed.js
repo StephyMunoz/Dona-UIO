@@ -1,5 +1,6 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {
+  ActivityIndicator,
   Alert,
   ScrollView,
   StyleSheet,
@@ -9,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import {useAuth} from '../lib/auth';
-import {useNavigation} from '@react-navigation/native';
+import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import * as yup from 'yup';
 import {filter, map, size} from 'lodash';
 import {db, storage} from '../firebase';
@@ -33,34 +34,37 @@ const EditHumanitarianNeed = props => {
   const [loadingText, setLoadingText] = useState(false);
   const [getKey, setGetKey] = useState(null);
 
-  useEffect(() => {
-    db.ref('foundations').on('value', snapshot => {
-      snapshot.forEach(needItem => {
-        if (
-          needItem.val().id === id &&
-          needItem.val().createdBy === createdBy
-        ) {
-          setGetKey(needItem.key);
-        }
+  useFocusEffect(
+    useCallback(() => {
+      db.ref('foundations').on('value', snapshot => {
+        snapshot.forEach(needItem => {
+          if (
+            needItem.val().id === id &&
+            needItem.val().createdBy === user.uid
+          ) {
+            setGetKey(needItem.key);
+          }
+        });
       });
-    });
-    return () => {
-      db.ref('foundations').off();
-    };
-  }, [id, createdBy]);
+      return () => {
+        db.ref('foundations').off();
+      };
+    }, [id, user.uid]),
+  );
 
   console.log('props', getKey);
-
-  if (!getKey) {
-    db.ref('foundations').on('value', snapshot => {
-      snapshot.forEach(needItem => {
-        if (needItem.val().id === id) {
-          setGetKey(needItem.key);
-        }
+  const handleGetKey = async () => {
+    if (!getKey) {
+      await db.ref('foundations').on('value', snapshot => {
+        snapshot.forEach(needItem => {
+          if (needItem.val().id === id) {
+            setGetKey(needItem.key);
+          }
+        });
       });
-    });
-    return <Loading isVisible={true} text="Cargando formulario" />;
-  }
+      // return <ActivityIndicator />;
+    }
+  };
 
   const schema = yup.object().shape({
     title: yup.string().required('Ingrese un título adecuado'),
@@ -83,42 +87,47 @@ const EditHumanitarianNeed = props => {
       setLoading(false);
       toastRef.current.show('Seleccione una imagen para poder continuar');
     } else {
-      setLoading(true);
-      setError(null);
-      try {
+      if (getKey) {
         setLoading(true);
-        setLoadingText('Actualizando información');
-        await uploadImageStorage().then(response => {
-          db.ref(`foundations/${getKey}`)
-            .set({
-              updatedAt: new Date().getTime(),
-              createdAt: createdAt,
-              title: data.title,
-              food: data.food,
-              personal_care: data.personal_care,
-              other: data.other,
-              images: response,
-              createdBy: createdBy,
-              id: id,
-            })
-            .then(() => {
-              setLoading(false);
-              if (user.role === 'administrator') {
-                navigation.navigate('home');
-              } else {
-                navigation.navigate('humanitarian_needs');
-              }
-            })
-            .catch(e => {
-              setLoading(false);
-              console.log('e', e);
-              toastRef.current.show(
-                'Error al subir la información, intentelo más tarde',
-              );
-            });
-        });
-      } catch (e) {
-        setLoading(false);
+        setError(null);
+        try {
+          setLoading(true);
+          setLoadingText('Actualizando información');
+          await uploadImageStorage().then(response => {
+            db.ref(`foundations/${getKey}`)
+              .set({
+                updatedAt: new Date().getTime(),
+                createdAt: createdAt,
+                title: data.title,
+                food: data.food,
+                personal_care: data.personal_care,
+                other: data.other,
+                images: response,
+                createdBy: createdBy,
+                id: id,
+              })
+              .then(() => {
+                setLoading(false);
+                if (user.role === 'administrator') {
+                  navigation.navigate('home');
+                } else {
+                  navigation.navigate('humanitarian_needs');
+                }
+              })
+              .catch(e => {
+                setLoading(false);
+                console.log('e', e);
+                toastRef.current.show(
+                  'Error al subir la información, intentelo más tarde',
+                );
+              });
+          });
+        } catch (e) {
+          setLoading(false);
+        }
+      } else {
+        toastRef.current.show('Espere un momento');
+        handleGetKey();
       }
     }
   };

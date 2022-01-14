@@ -19,7 +19,6 @@ export default function AddLocation({isVisible, setIsVisible, toastRef}) {
   const [location, setLocation] = useState(null);
   const [locationFoundation, setLocationFoundation] = useState(null);
   const {user} = useAuth();
-  // const { toastRef, setIsLoading, navigation } = ;
 
   const schema = yup.object().shape({
     address: yup.string().required('Agregue la dirección de la fundación'),

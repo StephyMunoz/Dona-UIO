@@ -67,7 +67,7 @@ const HumanitarianNeeds = () => {
     if (humanitarianNeeds.length <= totalFoundationNeeds) {
       setIsLoading(true);
       await db
-        .ref(`foundations/${user.uid}`)
+        .ref('foundations')
         .orderByChild('updatedAt')
         .limitToLast(limitNumber)
         .endBefore(humanitarianNeeds[humanitarianNeeds.length - 1].updatedAt)

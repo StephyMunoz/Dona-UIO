@@ -63,7 +63,7 @@ const AnimalNeeds = () => {
     if (animalNeeds.length <= totalAnimalNeeds) {
       setIsLoading(true);
       await db
-        .ref(`foundations/${user.uid}`)
+        .ref('foundations')
         .orderByChild('updatedAt')
         .limitToLast(limitAnimalNeeds)
         .endBefore(animalNeeds[animalNeeds.length - 1].updatedAt)

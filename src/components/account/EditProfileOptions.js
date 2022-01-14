@@ -64,12 +64,6 @@ const ProfileOptions = () => {
         setAddress(snapshot.val());
       });
 
-      await db.ref(`users/${user.uid}/location`).on('value', snapshot => {
-        if (snapshot.val() !== null) {
-          setLocation(true);
-        }
-      });
-
       return () => {
         db.ref(`phones/${user.uid}`).off();
         db.ref(`users/${user.uid}/description`).off();

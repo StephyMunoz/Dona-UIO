@@ -35,7 +35,8 @@ const EditAnimalNeed = props => {
   useEffect(() => {
     db.ref('foundations').on('value', snapshot => {
       snapshot.forEach(needItem => {
-        if (needItem.val().id === id) {
+        if (needItem.val().createdBy === user.uid && needItem.val().id === id) {
+          console.log(needItem.key);
           setGetKey(needItem.key);
         }
       });
@@ -43,7 +44,7 @@ const EditAnimalNeed = props => {
     return () => {
       db.ref('foundations').off();
     };
-  }, [id, createdBy]);
+  }, [id, user.uid]);
 
   if (!getKey) {
     db.ref('foundations').on('value', snapshot => {
@@ -53,11 +54,7 @@ const EditAnimalNeed = props => {
         }
       });
     });
-    return (
-      db.ref('foundations') && (
-        <Loading isVisible={true} text="Cargando formulario" />
-      )
-    );
+    return <Loading isVisible={true} text="Cargando formulario" />;
   }
 
   const schema = yup.object().shape({

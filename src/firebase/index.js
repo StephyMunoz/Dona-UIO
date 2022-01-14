@@ -3,16 +3,17 @@ import firebase from 'firebase/app';
 import 'firebase/database';
 import 'firebase/auth';
 import 'firebase/storage';
+import Config from 'react-native-config';
 
 const firebaseConfig = {
-  apiKey: 'AIzaSyCRJIL8hg7y-evgmHQ_G51-QfuSUAJcQ1M',
-  authDomain: 'dona-uio.firebaseapp.com',
-  databaseURL: 'https://dona-uio-default-rtdb.firebaseio.com',
-  projectId: 'dona-uio',
-  storageBucket: 'dona-uio.appspot.com',
-  messagingSenderId: '83275633302',
-  appId: '1:83275633302:web:a35e503bc04edc3c82e8b7',
-  measurementId: 'G-60NG7DYDKN',
+  apiKey: Config.REACT_APP_API_KEY,
+  authDomain: Config.REACT_APP_AUTH_DOMAIN,
+  databaseURL: Config.REACT_APP_DATABASE_URL,
+  projectId: Config.REACT_APP_PROJECT_ID,
+  storageBucket: Config.REACT_APP_STORAGE_BUCKET,
+  messagingSenderId: Config.REACT_APP_MESSAGING_SENDER_ID,
+  appId: Config.REACT_APP_APP_ID,
+  measurementId: Config.REACT_APP_MEASUREMENT_ID,
 };
 
 // Initialize Firebase

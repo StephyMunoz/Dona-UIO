@@ -227,7 +227,6 @@ function FoundationNeed({foundationNeed, navigation, toastRef}) {
   };
 
   const handleEdit = () => {
-    console.log(foundationSelected);
     if (foundationSelected.role === 'animal_help') {
       navigation.navigate('edit_animals_publication', {
         id,
@@ -459,10 +458,10 @@ const styles = StyleSheet.create({
   },
   iconTrash: {
     position: 'absolute',
-    right: 10,
+    right: 30,
   },
   iconEdit: {
     position: 'absolute',
-    right: 50,
+    right: 70,
   },
 });
