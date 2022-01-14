@@ -22,8 +22,7 @@ DerivedData
 *.xcuserstate
 
 
-.env
-.env.local
+**/*.env
 # Android/IntelliJ
 #
 build/
