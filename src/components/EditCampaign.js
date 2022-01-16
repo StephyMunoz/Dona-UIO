@@ -67,65 +67,75 @@ const EditCampaign = props => {
       path: 'images,',
     },
   };
-
-  if (!getKey) {
-    db.ref('campaigns').on('value', snapshot => {
-      snapshot.forEach(needItem => {
-        if (needItem.val().id === id) {
-          setGetKey(needItem.key);
-        }
+  const handleGetKey = async () => {
+    if (!getKey) {
+      db.ref('campaigns').on('value', snapshot => {
+        snapshot.forEach(needItem => {
+          if (needItem.val().id === id) {
+            setGetKey(needItem.key);
+          }
+        });
       });
-    });
-    // return () => {
-    //   db.ref('campaigns').off();
-    // };
-    return <Loading isVisible={true} text="Cargando formulario" />;
-  }
+      return () => {
+        db.ref('campaigns').off();
+      };
+    }
+  };
+
+  console.log('key campaign', getKey);
 
   const onFinish = async data => {
     if (size(imagesSelected) === 0) {
       setLoading(false);
       toastRef.current.show('Seleccione al menos imagen para continuar');
     } else {
-      setLoading(true);
-      try {
+      if (getKey) {
         setLoading(true);
-        setLoadingText('Actualizando información');
-        await uploadImageStorage().then(response => {
-          db.ref(`campaigns/${getKey}`)
-            .set({
-              updatedAt: new Date().getTime(),
-              createdAt: createdAt,
-              title: data.title,
-              campaignDescription: data.campaignDescription,
-              other: data.other,
-              images: response,
-              createdBy: createdBy,
-              id: id,
-            })
-            .then(() => {
-              setLoading(false);
-              if (user && user.role === 'administrator') {
-                navigation.navigate('campaigns_page');
-              } else {
-                navigation.navigate('animalCampaign');
-              }
-            })
-            .catch(e => {
-              setLoading(false);
-              console.log('e', e);
-              toastRef.current.show(
-                'Error al subir la información, intentelo más tarde',
-              );
-            });
-        });
-      } catch (e) {
-        setLoading(false);
+        try {
+          setLoading(true);
+          setLoadingText('Actualizando información');
+          await uploadImageStorage().then(response => {
+            db.ref(`campaigns/${getKey}`)
+              .set({
+                updatedAt: new Date().getTime(),
+                createdAt: createdAt,
+                title: data.title,
+                campaignDescription: data.campaignDescription,
+                other: data.other,
+                images: response,
+                createdBy: createdBy,
+                id: id,
+              })
+              .then(() => {
+                setLoading(false);
+                if (user && user.role === 'administrator') {
+                  navigation.navigate('campaigns_page');
+                } else {
+                  navigation.navigate('animalCampaign');
+                }
+              })
+              .catch(e => {
+                setLoading(false);
+                console.log('e', e);
+                toastRef.current.show(
+                  'Error al subir la información, intentelo más tarde',
+                );
+              });
+          });
+        } catch (e) {
+          setLoading(false);
+        }
+      } else {
+        toastRef.current.show('Por favor, intentelo de nuevo');
+        await handleGetKey();
       }
     }
   };
 
   const handleLaunchCamera = async () => {
+    if (!getKey) {
+      await handleGetKey();
+    }
     await launchImageLibrary(options, response => {
       if (response.didCancel) {
         toastRef.current.show('Selección de imagen ha sido cancelada');

@@ -1,6 +1,5 @@
-import React, {useCallback, useEffect, useRef, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
-  ActivityIndicator,
   Alert,
   ScrollView,
   StyleSheet,
@@ -10,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import {useAuth} from '../lib/auth';
-import {useFocusEffect, useNavigation} from '@react-navigation/native';
+import {useNavigation} from '@react-navigation/native';
 import * as yup from 'yup';
 import {filter, map, size} from 'lodash';
 import {db, storage} from '../firebase';
@@ -22,7 +21,6 @@ import Toast from 'react-native-easy-toast';
 import Loading from './Loading';
 
 const EditHumanitarianNeed = props => {
-  // /const {routes} = props.params;
   const {id, images, food, personal_care, other, title, createdAt, createdBy} =
     props.route.params;
   const {user} = useAuth();
@@ -34,14 +32,30 @@ const EditHumanitarianNeed = props => {
   const [loadingText, setLoadingText] = useState(false);
   const [getKey, setGetKey] = useState(null);
 
-  useFocusEffect(
-    useCallback(() => {
-      db.ref('foundations').on('value', snapshot => {
+  useEffect(() => {
+    const getKeyFunction = async () => {
+      await db.ref('foundations').on('value', snapshot => {
         snapshot.forEach(needItem => {
-          if (
-            needItem.val().id === id &&
-            needItem.val().createdBy === user.uid
-          ) {
+          const q = needItem.val();
+          if (q.id === id) {
+            setGetKey(needItem.key);
+          }
+        });
+      });
+    };
+    getKeyFunction();
+    return () => {
+      db.ref('foundations').off();
+    };
+  }, [id, createdBy]);
+  console.log('props', getKey);
+
+  const getKeyFunction = async () => {
+    if (!getKey) {
+      await db.ref('foundations').on('value', snapshot => {
+        snapshot.forEach(needItem => {
+          const q = needItem.val();
+          if (q.id === id) {
             setGetKey(needItem.key);
           }
         });
@@ -49,20 +63,6 @@ const EditHumanitarianNeed = props => {
       return () => {
         db.ref('foundations').off();
       };
-    }, [id, user.uid]),
-  );
-
-  console.log('props', getKey);
-  const handleGetKey = async () => {
-    if (!getKey) {
-      await db.ref('foundations').on('value', snapshot => {
-        snapshot.forEach(needItem => {
-          if (needItem.val().id === id) {
-            setGetKey(needItem.key);
-          }
-        });
-      });
-      // return <ActivityIndicator />;
     }
   };
 
@@ -71,7 +71,6 @@ const EditHumanitarianNeed = props => {
     food: yup.string(),
     personal_care: yup.string(),
     other: yup.string(),
-    // images: yup.mixed(),
   });
 
   const options = {
@@ -126,13 +125,17 @@ const EditHumanitarianNeed = props => {
           setLoading(false);
         }
       } else {
-        toastRef.current.show('Espere un momento');
-        handleGetKey();
+        toastRef.current.show('Vuelva a intentarlo');
+        await getKeyFunction();
       }
     }
   };
 
   const handleLaunchCamera = async () => {
+    if (!getKey) {
+      await getKeyFunction();
+    }
+
     await launchImageLibrary(options, response => {
       if (response.didCancel) {
         toastRef.current.show('Selección de imagen cancelada');
@@ -303,7 +306,9 @@ const EditHumanitarianNeed = props => {
                   </Text>
                 )}
               </View>
-              <Text style={styles.subtitle}>Seleccione una imagen</Text>
+              <Text style={styles.subtitle}>
+                Seleccione una imagen (Máximo 4)
+              </Text>
               <View style={styles.viewImages}>
                 {size(imagesSelected) < 4 && (
                   <TouchableOpacity onPress={handleLaunchCamera}>

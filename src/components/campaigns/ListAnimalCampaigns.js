@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   viewAnimalCampaign: {
-    margin: 20,
+    margin: 10,
   },
   date: {
     color: 'grey',
@@ -220,6 +220,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 10,
     fontWeight: 'bold',
+    marginTop: 20,
   },
   viewAnimalCampaignImage: {
     marginRight: 15,
@@ -255,6 +256,6 @@ const styles = StyleSheet.create({
   },
   divider: {
     marginTop: 10,
-    marginBottom: 20,
+    // marginBottom: 10,
   },
 });

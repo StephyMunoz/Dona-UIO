@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useRef, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -9,7 +9,6 @@ import {
   View,
 } from 'react-native';
 import {Icon, Image} from 'react-native-elements';
-import {useFocusEffect} from '@react-navigation/native';
 import Toast from 'react-native-easy-toast';
 import Loading from '../components/Loading';
 import {useAuth} from '../lib/auth';
@@ -20,47 +19,49 @@ const Favorites = props => {
   const {navigation} = props;
   const {user} = useAuth();
   const [foundations, setFoundations] = useState(null);
-  const [foundationList, setFoundationList] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [reloadData, setReloadData] = useState(false);
   const toastRef = useRef();
 
-  useFocusEffect(
-    useCallback(() => {
-      const listFoundations = [];
-      db.ref('favorites').on('value', snapshot => {
-        snapshot.forEach(foundation => {
-          if (foundation.val().idUser === user.uid) {
-            listFoundations.push(foundation.val().idFoundation);
-          }
+  useEffect(() => {
+    const listFoundations = [];
+    db.ref('favorites').on('value', snapshot => {
+      snapshot.forEach(foundation => {
+        const q = foundation.val();
+        if (q.idUser === user.uid) {
+          listFoundations.push(q.idFoundation);
+        }
+      });
+    });
+
+    console.log('hh', listFoundations);
+
+    getFavorites(listFoundations).then(response => {
+      const foundationFavorite = [];
+      response.forEach(foundation => {
+        db.ref(`users/${foundation.uid}`).on('value', snapshot => {
+          foundationFavorite.push(snapshot.val());
+          setReloadData(reloadData);
         });
       });
-      setFoundations(listFoundations);
+      setFoundations(foundationFavorite);
+    });
+    setReloadData(false);
+  }, [user.uid, reloadData]);
 
-      setReloadData(false);
-    }, [user.uid]),
-  );
+  const getFavorites = idFoundations => {
+    const arrayFoundations = [];
+    idFoundations.forEach(id => {
+      db.ref(`users/${id}`).on('value', snapshot => {
+        arrayFoundations.push(snapshot.val());
+      });
+    });
+    return Promise.all(arrayFoundations);
+  };
 
-  // const getFavorites = arrayFavorites => {};
-
-  useFocusEffect(
-    useCallback(() => {
-      let foundationFavorite = [];
-      if (foundations) {
-        foundations.forEach(foundation => {
-          db.ref(`users/${foundation}`).on('value', snapshot => {
-            foundationFavorite.push(snapshot.val());
-          });
-        });
-        setFoundationList(foundationFavorite);
-      }
-      setReloadData(false);
-    }, [foundations]),
-  );
-
-  if (!foundationList) {
+  if (!foundations) {
     return <ActivityIndicator size="large" />;
-  } else if (foundationList && foundationList.length === 0) {
+  } else if (foundations && foundations?.length === 0) {
     return <NotFoundFoundations />;
   }
 
@@ -68,7 +69,7 @@ const Favorites = props => {
     <View style={styles.viewBody}>
       {foundations ? (
         <FlatList
-          data={foundationList}
+          data={foundations}
           renderItem={foundation => (
             <Foundation
               foundation={foundation}
@@ -168,11 +169,12 @@ function Foundation(props) {
         setIsLoading(false);
         toastRef.current.show('Error al eliminar el Foundatione');
       });
+
     db.ref('favorites').off();
   };
 
   const goToFoundationScreen = () => {
-    navigation.navigate('foundation_favorite', {
+    navigation.navigate('publications', {
       name: displayName,
       image,
       id: uid,
@@ -198,6 +200,7 @@ function Foundation(props) {
             containerStyle={styles.favorite}
             onPress={confirmRemoveFavorite}
             underlayColor="transparent"
+            size={30}
           />
         </View>
       </TouchableOpacity>
@@ -229,13 +232,13 @@ const styles = StyleSheet.create({
     paddingLeft: 20,
     paddingRight: 20,
     paddingTop: 10,
-    paddingBottom: 10,
     marginTop: -30,
     backgroundColor: '#fff',
   },
   name: {
     fontWeight: 'bold',
     fontSize: 30,
+    color: 'grey',
   },
   favorite: {
     marginTop: -35,

@@ -114,8 +114,8 @@ function AnimalCampaign({animalCampaign, navigation, toastRef}) {
     };
   }, [createdBy]);
 
-  if (!foundation || !avatar) {
-    return <Loading isVisible={true} text="Cargando información" />;
+  if (!avatar) {
+    return <ActivityIndicator />;
   }
 
   const addFavorite = () => {
@@ -273,20 +273,22 @@ function AnimalCampaign({animalCampaign, navigation, toastRef}) {
           />
         </View>
       )}
-      <View style={{flexDirection: 'row'}}>
-        <Avatar
-          source={{uri: avatar}}
-          rounded
-          containerStyle={styles.avatar}
-          size="medium"
-        />
-        <TouchableOpacity onPress={handleNavigation}>
-          <View>
-            <Text style={styles.foundation}>{foundation.displayName}</Text>
-            <Text style={styles.descriptionCampaign}>{foundation.email}</Text>
-          </View>
-        </TouchableOpacity>
-      </View>
+      {foundation && avatar && (
+        <View style={{flexDirection: 'row'}}>
+          <Avatar
+            source={{uri: avatar}}
+            rounded
+            containerStyle={styles.avatar}
+            size="medium"
+          />
+          <TouchableOpacity onPress={handleNavigation}>
+            <View>
+              <Text style={styles.foundation}>{foundation.displayName}</Text>
+              <Text style={styles.descriptionCampaign}>{foundation.email}</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+      )}
 
       <Carousel arrayImages={images} height={200} width={screenWidth} />
       <Text style={styles.date}>
@@ -349,8 +351,8 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     color: '#000',
-    marginBottom: 10,
     fontWeight: 'bold',
+    marginBottom: 10,
   },
   viewAnimalCampaignImage: {
     marginRight: 15,
@@ -373,7 +375,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     textAlign: 'justify',
-    marginTop: 10,
     color: '#000',
   },
   date: {

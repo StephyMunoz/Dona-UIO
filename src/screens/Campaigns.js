@@ -1,5 +1,5 @@
 import React, {useCallback, useRef, useState} from 'react';
-import {StyleSheet, Text, View} from 'react-native';
+import {ActivityIndicator, StyleSheet, Text, View} from 'react-native';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
 
 import {Icon} from 'react-native-elements';
@@ -14,7 +14,7 @@ const Campaigns = () => {
   const {user} = useAuth();
   const [animalCampaigns, setAnimalCampaigns] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [totalCampaigns, setTotalCampaings] = useState(0);
+  const [totalCampaigns, setTotalCampaigns] = useState(0);
   const limitCampaigns = 5;
 
   useFocusEffect(
@@ -22,7 +22,7 @@ const Campaigns = () => {
       const resultAnimalCampaigns = [];
 
       db.ref('campaigns').on('value', snapshot => {
-        setTotalCampaings(snapshot.numChildren());
+        setTotalCampaigns(snapshot.numChildren());
       });
 
       const getCampaigns = async () => {
@@ -44,6 +44,10 @@ const Campaigns = () => {
       };
     }, []),
   );
+
+  if (animalCampaigns.length === 0) {
+    return <ActivityIndicator size="large" />;
+  }
 
   const handleLoadMore = async () => {
     const resultCampaigns = [];
@@ -126,7 +130,6 @@ const styles = StyleSheet.create({
   viewBody: {
     flex: 1,
     backgroundColor: '#fff',
-    paddingBottom: 50,
   },
   textEmpty: {
     marginTop: 30,

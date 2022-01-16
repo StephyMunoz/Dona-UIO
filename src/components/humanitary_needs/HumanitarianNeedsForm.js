@@ -263,7 +263,7 @@ const HumanitarianNeedsForm = () => {
                 Seleccione una imagen (Máximo 4)
               </Text>
               <View style={styles.viewImages}>
-                {size(imagesSelected) < 5 && (
+                {size(imagesSelected) < 4 && (
                   <TouchableOpacity onPress={handleLaunchCamera}>
                     <Icon
                       type="material-community"

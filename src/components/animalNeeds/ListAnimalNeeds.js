@@ -230,6 +230,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 20,
+    marginTop: 20,
     color: '#000',
     textAlign: 'center',
     marginBottom: 10,
@@ -268,7 +269,7 @@ const styles = StyleSheet.create({
   },
   notFoundAnimalNeeds: {
     marginTop: 10,
-    marginBottom: 20,
+    marginBottom: 10,
     alignItems: 'center',
   },
 });

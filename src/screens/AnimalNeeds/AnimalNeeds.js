@@ -136,7 +136,6 @@ const styles = StyleSheet.create({
   viewBody: {
     flex: 1,
     backgroundColor: '#fff',
-    paddingBottom: 50,
   },
   textEmpty: {
     marginTop: 30,

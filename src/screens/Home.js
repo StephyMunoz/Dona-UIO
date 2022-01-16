@@ -1,5 +1,5 @@
 import React, {useCallback, useRef, useState} from 'react';
-import {StyleSheet, Text, View} from 'react-native';
+import {ActivityIndicator, StyleSheet, Text, View} from 'react-native';
 import Toast from 'react-native-easy-toast';
 import {useFocusEffect} from '@react-navigation/native';
 import {db} from '../firebase';
@@ -40,6 +40,10 @@ const Home = () => {
     }, []),
   );
 
+  if (foundationNeeds.length === 0) {
+    return <ActivityIndicator size="large" />;
+  }
+
   const handleLoadMore = async () => {
     const resultNeeds = [];
 
@@ -70,7 +74,7 @@ const Home = () => {
 
   return (
     <View style={styles.viewBody}>
-      {foundationNeeds.length === 0 ? (
+      {foundationNeeds?.length === 0 ? (
         <View>
           <Text style={styles.textEmpty}>Aún no existen registros</Text>
         </View>
@@ -109,7 +113,6 @@ const styles = StyleSheet.create({
   viewBody: {
     flex: 1,
     backgroundColor: '#fff',
-    paddingBottom: 20,
   },
   textEmpty: {
     textAlign: 'center',

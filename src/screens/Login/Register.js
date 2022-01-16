@@ -79,6 +79,18 @@ const Register = ({role}) => {
           });
           await auth.currentUser.updateProfile({displayName: data.displayName});
 
+          await auth.currentUser
+            .sendEmailVerification()
+            .then(
+              toastRef.current.show(
+                'Se ha enviado un email de verificación a tu correo electrónico',
+                Alert.alert(
+                  'Completar verificación',
+                  'Se ha enviado un email de verificación a tu correo electrónico',
+                ),
+              ),
+            );
+
           await uploadImage(imageSelected);
 
           await storage
@@ -90,23 +102,11 @@ const Register = ({role}) => {
               };
               await auth.currentUser.updateProfile(update);
               setLoading(false);
+              navigation.navigate('home');
             })
             .catch(() => {
               toastRef.current.show('Error al actualizar el avatar.');
             });
-
-          await auth.currentUser.sendEmailVerification().then(
-            toastRef.current.show(
-              'Se ha enviado un email de verificación a tu correo electrónico',
-              Alert.alert(
-                'Completar verificación',
-                'Se ha enviado un email de verificación a tu correo electrónico',
-              ),
-            ),
-
-            setLoading(false),
-            navigation.navigate('home'),
-          );
         } catch (error) {
           const errorCode = error.code;
           toastRef.current.show(errorCode);

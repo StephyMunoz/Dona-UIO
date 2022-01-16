@@ -35,7 +35,10 @@ const EditAnimalNeed = props => {
   useEffect(() => {
     db.ref('foundations').on('value', snapshot => {
       snapshot.forEach(needItem => {
-        if (needItem.val().createdBy === user.uid && needItem.val().id === id) {
+        if (
+          needItem.val().createdBy === createdBy &&
+          needItem.val().id === id
+        ) {
           console.log(needItem.key);
           setGetKey(needItem.key);
         }
@@ -44,18 +47,24 @@ const EditAnimalNeed = props => {
     return () => {
       db.ref('foundations').off();
     };
-  }, [id, user.uid]);
+  }, [id, createdBy]);
 
-  if (!getKey) {
-    db.ref('foundations').on('value', snapshot => {
-      snapshot.forEach(needItem => {
-        if (needItem.val().id === id) {
-          setGetKey(needItem.key);
-        }
+  const handleGetKeyNeed = async () => {
+    if (!getKey) {
+      await db.ref('foundations').on('value', snapshot => {
+        snapshot.forEach(needItem => {
+          if (needItem.val().id === id) {
+            setGetKey(needItem.key);
+          }
+        });
       });
-    });
-    return <Loading isVisible={true} text="Cargando formulario" />;
-  }
+      return () => {
+        db.ref('foundations').off();
+      };
+    }
+  };
+
+  console.log('props ani', getKey);
 
   const schema = yup.object().shape({
     title: yup.string().required('Ingrese un título adecuado'),
@@ -78,41 +87,46 @@ const EditAnimalNeed = props => {
       setLoading(false);
       toastRef.current.show('Seleccione al menos imagen para poder continuar');
     } else {
-      setLoading(true);
-      try {
+      if (getKey) {
         setLoading(true);
-        setLoadingText('Actualizando información');
-        await uploadImageStorage().then(response => {
-          db.ref(`foundations/${getKey}`)
-            .set({
-              updatedAt: new Date().getTime(),
-              createdAt: createdAt,
-              title: data.title,
-              food: data.food,
-              medicine: data.medicine,
-              other: data.other,
-              images: response,
-              createdBy: createdBy,
-              id: id,
-            })
-            .then(() => {
-              setLoading(false);
-              if (user.role === 'administrator') {
-                navigation.navigate('home');
-              } else {
-                navigation.navigate('animal_needs');
-              }
-            })
-            .catch(e => {
-              setLoading(false);
-              console.log('e', e);
-              toastRef.current.show(
-                'Error al subir la información, intentelo más tarde',
-              );
-            });
-        });
-      } catch (e) {
-        setLoading(false);
+        try {
+          setLoading(true);
+          setLoadingText('Actualizando información');
+          await uploadImageStorage().then(response => {
+            db.ref(`foundations/${getKey}`)
+              .set({
+                updatedAt: new Date().getTime(),
+                createdAt: createdAt,
+                title: data.title,
+                food: data.food,
+                medicine: data.medicine,
+                other: data.other,
+                images: response,
+                createdBy: createdBy,
+                id: id,
+              })
+              .then(() => {
+                setLoading(false);
+                if (user.role === 'administrator') {
+                  navigation.navigate('home');
+                } else {
+                  navigation.navigate('animal_needs');
+                }
+              })
+              .catch(e => {
+                setLoading(false);
+                console.log('e', e);
+                toastRef.current.show(
+                  'Error al subir la información, intentelo más tarde',
+                );
+              });
+          });
+        } catch (e) {
+          setLoading(false);
+        }
+      } else {
+        toastRef.current.show('Por favor intentelo de nuevo');
+        await handleGetKeyNeed();
       }
     }
   };

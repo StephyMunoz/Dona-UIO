@@ -53,7 +53,7 @@ const FoundationView = () => {
 
   const handleInfo = () => {
     Alert.alert(
-      '¿Cómo me ven los usuarios de Dona-UIO',
+      '¿Cómo me ven los usuarios de Dona-UIO?',
       'Esta pantalla muestra cómo ven los usuarios tu perfil, para modificarlo dirígete a tu perfil',
       [
         {

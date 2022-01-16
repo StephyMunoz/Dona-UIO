@@ -77,7 +77,7 @@ function HumanitarianNeed({humanitarianNeed, toastRef, navigation}) {
     );
   };
 
-  const handleEditPublication = () => {
+  const handleEditPublication = async () => {
     navigation.navigate('form_edit_needs', {
       id,
       images,
@@ -229,6 +229,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 20,
+    marginTop: 20,
     color: '#000',
     marginBottom: 10,
     fontWeight: 'bold',

@@ -9,12 +9,9 @@ import ChangePasswordForm from './ChangePasswordForm';
 import {useAuth} from '../../lib/auth';
 
 export default function AccountOptions({setReloadUserInfo}) {
-  // console.log('modal', success);
   const {user} = useAuth();
   const [showModal, setShowModal] = useState(false);
   const [renderComponent, setRenderComponent] = useState(null);
-  // const [realoadUserInfo, setRealoadUserInfo] =
-  // console.log('whomodal', whomodal);
   const selectedComponent = key => {
     switch (key) {
       case 'name':

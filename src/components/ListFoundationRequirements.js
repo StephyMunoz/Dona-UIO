@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -11,12 +11,13 @@ import {
 } from 'react-native';
 import {Avatar, Icon} from 'react-native-elements';
 import {size} from 'lodash';
-import {useNavigation} from '@react-navigation/native';
+import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {Divider} from 'react-native-elements/dist/divider/Divider';
 import {db, storage} from '../firebase';
-import Carousel from '../components/Carousel';
+import Carousel from './Carousel';
 import {useAuth} from '../lib/auth';
 import avatarDefault from '../images/avatar-default.jpg';
+import Loading from './Loading';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -30,28 +31,31 @@ const ListFoundationRequirements = ({
 
   return (
     <View>
-      {size(foundationsNeeds) > 0 ? (
-        <FlatList
-          data={foundationsNeeds}
-          initialNumToRender={3}
-          renderItem={need => (
-            <FoundationNeed
-              foundationNeed={need}
-              navigation={navigation}
-              toastRef={toastRef}
-            />
-          )}
-          keyExtractor={(item, index) => index.toString()}
-          onEndReachedThreshold={0.5}
-          onEndReached={handleLoadMore}
-          ListFooterComponent={<FooterList isLoading={isLoading} />}
-        />
-      ) : (
-        <View style={styles.loaderHumanitarianNeeds}>
-          <ActivityIndicator size="large" />
-          {/*<Text>Cargando requerimientos</Text>*/}
-        </View>
-      )}
+      {
+        size(foundationsNeeds) > 0 && (
+          <FlatList
+            data={foundationsNeeds}
+            initialNumToRender={3}
+            renderItem={need => (
+              <FoundationNeed
+                foundationNeed={need}
+                navigation={navigation}
+                toastRef={toastRef}
+              />
+            )}
+            keyExtractor={(item, index) => index.toString()}
+            onEndReachedThreshold={0.5}
+            onEndReached={handleLoadMore}
+            ListFooterComponent={<FooterList isLoading={isLoading} />}
+          />
+        )
+        //   : (
+        //   <View style={styles.loaderHumanitarianNeeds}>
+        //     {/*<ActivityIndicator size="large" />*/}
+        //     <Text>Cargando requerimientos</Text>
+        //   </View>
+        // )
+      }
     </View>
   );
 };
@@ -75,6 +79,7 @@ function FoundationNeed({foundationNeed, navigation, toastRef}) {
   const {user} = useAuth();
   const [loading, setLoading] = useState(false);
   const [loadingText, setLoadingText] = useState(null);
+  const [reload, setReload] = useState(false);
 
   useEffect(() => {
     db.ref(`users/${createdBy}`).on('value', snapshot => {
@@ -93,28 +98,30 @@ function FoundationNeed({foundationNeed, navigation, toastRef}) {
     };
   }, [createdBy]);
 
-  useEffect(() => {
-    if (user) {
-      db.ref('favorites').on('value', snapshot => {
-        snapshot.forEach(fav => {
-          const q = fav.val();
-          if (q.idFoundation === createdBy) {
-            if (q.idUser === user.uid) {
-              setIsFavorite(true);
+  useFocusEffect(
+    useCallback(() => {
+      if (user) {
+        db.ref('favorites').on('value', snapshot => {
+          snapshot.forEach(fav => {
+            const q = fav.val();
+            if (q.idFoundation === createdBy) {
+              if (q.idUser === user.uid) {
+                setIsFavorite(true);
+                setReload(reload);
+              }
             }
-          }
+          });
         });
-      });
-    }
+      }
+      return () => {
+        db.ref('favorites').off();
+      };
+    }, [createdBy, user, reload]),
+  );
 
-    return () => {
-      db.ref('favorites').off();
-    };
-  }, [createdBy, user]);
-
-  if (!foundationSelected) {
-    return <ActivityIndicator size="large" />;
-  }
+  // if (!foundationSelected) {
+  //   return <ActivityIndicator size="large" />;
+  // }
 
   const handleDelete = () => {
     Alert.alert(
@@ -141,6 +148,10 @@ function FoundationNeed({foundationNeed, navigation, toastRef}) {
         .then(() => {
           setLoading(false);
           toastRef.current.show('Publicación eliminada exitosamente');
+          setIsFavorite(false);
+          return () => {
+            db.ref('favorites').off();
+          };
         })
         .catch(() => {
           setLoading(false);
@@ -194,13 +205,15 @@ function FoundationNeed({foundationNeed, navigation, toastRef}) {
   };
 
   const removeFavorite = () => {
+    setReload(true);
     let idRemove = '';
     db.ref('favorites').on('value', snapshot => {
       snapshot.forEach(fav => {
+        const idFav = fav.key;
         const q = fav.val();
         if (q.idFoundation === createdBy) {
           if (q.idUser === user.uid) {
-            idRemove = fav.key;
+            idRemove = idFav;
           }
         }
       });
@@ -210,6 +223,7 @@ function FoundationNeed({foundationNeed, navigation, toastRef}) {
       .remove()
       .then(() => {
         setIsFavorite(false);
+        setReload(true);
         toastRef.current.show('Fundación eliminada de favoritos');
       })
       .catch(() => {
@@ -300,14 +314,16 @@ function FoundationNeed({foundationNeed, navigation, toastRef}) {
             size="medium"
           />
         )}
-        <TouchableOpacity onPress={handleNavigation}>
-          <Text style={styles.foundation}>
-            {foundationSelected.displayName}
-          </Text>
-          <Text style={styles.descriptionCampaign}>
-            {foundationSelected.email}
-          </Text>
-        </TouchableOpacity>
+        {foundationSelected && (
+          <TouchableOpacity onPress={handleNavigation}>
+            <Text style={styles.foundation}>
+              {foundationSelected.displayName}
+            </Text>
+            <Text style={styles.descriptionCampaign}>
+              {foundationSelected.email}
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
       <Carousel arrayImages={images} height={250} width={screenWidth} />
       <Text style={styles.date}>
@@ -362,7 +378,7 @@ function FoundationNeed({foundationNeed, navigation, toastRef}) {
         </View>
       )}
       <Divider style={styles.divider} />
-      {/*<Loading isVisible={loading} text={loadingText} />*/}
+      <Loading isVisible={loading} text={loadingText} />
     </View>
   );
 }
@@ -458,10 +474,15 @@ const styles = StyleSheet.create({
   },
   iconTrash: {
     position: 'absolute',
-    right: 30,
+    right: 10,
   },
   iconEdit: {
     position: 'absolute',
-    right: 70,
+    right: 50,
+  },
+  iconHeart: {
+    position: 'absolute',
+    right: 10,
+    top: 0,
   },
 });
