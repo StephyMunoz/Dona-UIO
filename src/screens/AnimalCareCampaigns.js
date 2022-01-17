@@ -9,7 +9,7 @@ import {useAuth} from '../lib/auth';
 
 const AnimalCareCampaigns = () => {
   const navigation = useNavigation();
-  const {toastRef} = useRef();
+  const toastRef = useRef();
   const {user} = useAuth();
   const [animalCampaigns, setAnimalCampaigns] = useState([]);
   const [totalCampaigns, setTotalCampaigns] = useState(0);

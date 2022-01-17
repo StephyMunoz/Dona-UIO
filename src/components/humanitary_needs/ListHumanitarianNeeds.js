@@ -68,6 +68,7 @@ function HumanitarianNeed({humanitarianNeed, toastRef, navigation}) {
   } = humanitarianNeed.item;
   const [loading, setLoading] = useState(false);
   const [loadingText, setLoadingText] = useState(null);
+  const [deleteKey, setDeleteKey] = useState(null);
 
   const handleEdit = () => {
     Alert.alert(
@@ -92,6 +93,7 @@ function HumanitarianNeed({humanitarianNeed, toastRef, navigation}) {
   };
 
   const handleDelete = () => {
+    getDeleteKey();
     Alert.alert(
       'Eliminar requerimiento',
       '¿Esta seguro que desea eliminar esta publicación?',
@@ -99,10 +101,8 @@ function HumanitarianNeed({humanitarianNeed, toastRef, navigation}) {
     );
   };
 
-  const handlePublication = () => {
-    setLoading(true);
-    setLoadingText('Eliminando publicación');
-    let needFoundationKey = '';
+  const getDeleteKey = () => {
+    let needFoundationKey = null;
     db.ref('foundations').on('value', snapshot => {
       snapshot.forEach(needItem => {
         if (
@@ -112,26 +112,50 @@ function HumanitarianNeed({humanitarianNeed, toastRef, navigation}) {
           needFoundationKey = needItem.key;
         }
       });
+      setDeleteKey(needFoundationKey);
+    });
+    return () => {
+      db.ref('foundations').off();
+    };
+  };
+
+  const handlePublication = () => {
+    setLoading(true);
+    setLoadingText('Eliminando publicación');
+    db.ref('foundations').on('value', snapshot => {
+      snapshot.forEach(needItem => {
+        if (
+          needItem.val().createdBy === createdBy &&
+          needItem.val().id === id
+        ) {
+          setDeleteKey(needItem.key);
+        }
+      });
     });
 
-    try {
-      db.ref(`foundations/${needFoundationKey}`)
-        .remove()
-        .then(() => {
-          setLoading(false);
-          toastRef.current.show('Publicación eliminada correctamente');
-        })
-        .catch(() => {
-          setLoading(false);
-          toastRef.current.show(
-            'Ha ocurrido un error, por favor intente nuevamente más tarde',
-          );
-        });
-    } catch (e) {
-      setLoading(false);
-      toastRef.current.show(
-        'Ha ocurrido un error, por favor intente nuevamente más tarde',
-      );
+    if (deleteKey) {
+      try {
+        db.ref(`foundations/${deleteKey}`)
+          .remove()
+          .then(() => {
+            setLoading(false);
+            toastRef.current.show('Publicación eliminada correctamente');
+          })
+          .catch(() => {
+            setLoading(false);
+            toastRef.current.show(
+              'Ha ocurrido un error, por favor intente nuevamente más tarde',
+            );
+          });
+      } catch (e) {
+        setLoading(false);
+        toastRef.current.show(
+          'Ha ocurrido un error, por favor intente nuevamente más tarde',
+        );
+      }
+    } else {
+      toastRef.current.show('Por favor vuelvalo a intentar nuevamente');
+      getDeleteKey();
     }
 
     return () => {

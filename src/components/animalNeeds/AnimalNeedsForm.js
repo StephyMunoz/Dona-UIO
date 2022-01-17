@@ -256,7 +256,9 @@ const AnimalNeedsForm = () => {
                   </Text>
                 )}
               </View>
-              <Text style={styles.subtitle}>Seleccione una imagen</Text>
+              <Text style={styles.subtitle}>
+                Seleccione una imagen (Máximo 4)
+              </Text>
               <View style={styles.viewImages}>
                 {size(imagesSelected) < 4 && (
                   <TouchableOpacity onPress={handleLaunchCamera}>

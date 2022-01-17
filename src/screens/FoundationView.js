@@ -145,7 +145,7 @@ const FoundationView = () => {
                   <SocialIcon type="whatsapp" style={styles.whatsappIcon} />
                 )}
                 <ListItem.Content>
-                  <ListItem.Title>{item}</ListItem.Title>
+                  <ListItem.Title>0{item}</ListItem.Title>
                   <Divider width={1} />
                 </ListItem.Content>
               </ListItem>

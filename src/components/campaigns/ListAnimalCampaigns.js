@@ -68,6 +68,7 @@ function AnimalCampaign({animalCampaign, navigation, toastRef}) {
   } = animalCampaign.item;
   const [isLoading, setIsLoading] = useState(false);
   const [loadingText, setLoadingText] = useState(null);
+  const [deleteKey, setDeleteKey] = useState(null);
 
   const handleEdit = () => {
     Alert.alert(
@@ -91,6 +92,7 @@ function AnimalCampaign({animalCampaign, navigation, toastRef}) {
   };
 
   const handleDelete = () => {
+    getDeleteKey();
     Alert.alert(
       'Eliminar campaña',
       '¿Esta seguro que desea eliminar esta campaña?',
@@ -101,39 +103,57 @@ function AnimalCampaign({animalCampaign, navigation, toastRef}) {
     );
   };
 
+  const getDeleteKey = () => {
+    if (!deleteKey) {
+      let campaignKey = null;
+      db.ref('campaigns').on('value', snapshot => {
+        snapshot.forEach(needItem => {
+          if (needItem.val().id === id) {
+            campaignKey = needItem.key;
+          }
+        });
+      });
+      setDeleteKey(campaignKey);
+    }
+  };
+
+  console.log('jjj', deleteKey);
+
   const handleDeletePublication = () => {
-    setIsLoading(true);
-    setLoadingText('Eliminando campaña');
-    let campaignKey = '';
     db.ref('campaigns').on('value', snapshot => {
       snapshot.forEach(needItem => {
-        if (
-          needItem.val().createdBy === createdBy &&
-          needItem.val().id === id
-        ) {
-          campaignKey = needItem.key;
+        if (needItem.val().id === id) {
+          setDeleteKey(needItem.key);
         }
       });
     });
 
-    try {
-      db.ref(`campaigns/${campaignKey}`)
-        .remove()
-        .then(() => {
-          setIsLoading(false);
-          toastRef.current.show('Publicación eliminada exitosamente');
-        })
-        .catch(() => {
-          setIsLoading(false);
-          toastRef.current.show(
-            'Ha ocurrido un error, por favor intente nuevamente más tarde',
-          );
-        });
-    } catch (e) {
-      setIsLoading(false);
-      toastRef.current.show(
-        'Ha ocurrido un error, por favor intente nuevamente más tarde',
-      );
+    if (deleteKey) {
+      setIsLoading(true);
+      setLoadingText('Eliminando campaña');
+      try {
+        db.ref(`campaigns/${deleteKey}`)
+          .remove()
+          .then(() => {
+            setIsLoading(false);
+            toastRef.current.show('Publicación eliminada exitosamente');
+          })
+          .catch(e => {
+            setIsLoading(false);
+            toastRef.current.show(
+              'Ha ocurrido un error, por favor intente nuevamente más tarde ',
+              e,
+            );
+          });
+      } catch (e) {
+        setIsLoading(false);
+        toastRef.current.show(
+          'Ha ocurrido un error, por favor intente nuevamente más tarde',
+        );
+      }
+    } else {
+      toastRef.current.show('Ha ocurrido un error, vuelva a intentarlo');
+      getDeleteKey();
     }
 
     return () => {

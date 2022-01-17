@@ -80,6 +80,7 @@ function FoundationNeed({foundationNeed, navigation, toastRef}) {
   const [loading, setLoading] = useState(false);
   const [loadingText, setLoadingText] = useState(null);
   const [reload, setReload] = useState(false);
+  const [deleteKey, setDeleteKey] = useState(null);
 
   useEffect(() => {
     db.ref(`users/${createdBy}`).on('value', snapshot => {
@@ -124,46 +125,67 @@ function FoundationNeed({foundationNeed, navigation, toastRef}) {
   // }
 
   const handleDelete = () => {
+    handleGetKey();
     Alert.alert(
       'Eliminar publicación',
       '¿Esta seguro que desea eliminar esta publicación?',
       [{text: 'Cancelar'}, {text: 'Eliminar', onPress: handlePublication}],
     );
   };
+
+  const handleGetKey = () => {
+    db.ref('foundations').on('value', snapshot => {
+      snapshot.forEach(need => {
+        if (need.val().id === id) {
+          setDeleteKey(need.key);
+        }
+      });
+    });
+    return () => {
+      db.ref('foundations').off();
+    };
+  };
+
   const handlePublication = () => {
-    setLoadingText('Eliminando publicación');
-    setLoading(true);
-    let needKey = '';
     db.ref('foundations').on('value', snapshot => {
       snapshot.forEach(need => {
         if (need.val().createdBy === createdBy && need.val().id === id) {
-          needKey = need.key;
+          setDeleteKey(need.key);
         }
       });
     });
 
-    try {
-      db.ref(`foundations/${needKey}`)
-        .remove()
-        .then(() => {
-          setLoading(false);
-          toastRef.current.show('Publicación eliminada exitosamente');
-          setIsFavorite(false);
-          return () => {
-            db.ref('favorites').off();
-          };
-        })
-        .catch(() => {
-          setLoading(false);
-          toastRef.current.show(
-            'Ha ocurrido un error, por favor intente nuevamente más tarde',
-          );
-        });
-    } catch (e) {
+    if (deleteKey) {
+      setLoadingText('Eliminando publicación');
+      setLoading(true);
+
+      try {
+        db.ref(`foundations/${deleteKey}`)
+          .remove()
+          .then(() => {
+            setLoading(false);
+            toastRef.current.show('Publicación eliminada exitosamente');
+            setIsFavorite(false);
+            return () => {
+              db.ref('favorites').off();
+            };
+          })
+          .catch(() => {
+            setLoading(false);
+            toastRef.current.show(
+              'Ha ocurrido un error, por favor intente nuevamente más tarde',
+            );
+          });
+      } catch (e) {
+        setLoading(false);
+        toastRef.current.show(
+          'Ha ocurrido un error, por favor intente nuevamente más tarde',
+        );
+      }
+    } else {
       setLoading(false);
-      toastRef.current.show(
-        'Ha ocurrido un error, por favor intente nuevamente más tarde',
-      );
+      toastRef.current.show('Ha ocurrido un error, intentalo nuevamente');
+      handleGetKey();
     }
 
     return () => {

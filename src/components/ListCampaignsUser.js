@@ -71,6 +71,7 @@ function AnimalCampaign({animalCampaign, navigation, toastRef}) {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingText, setLoadingText] = useState(null);
   const [favorite, setFavorite] = useState(false);
+  const [getkey, setGetKey] = useState(null);
   const {user} = useAuth();
 
   useFocusEffect(
@@ -184,36 +185,53 @@ function AnimalCampaign({animalCampaign, navigation, toastRef}) {
     );
   };
 
-  const handleDeleteCampaign = () => {
-    setIsLoading(true);
-    setLoadingText('Eliminando campaña, espere');
-    let campaignDeleteKey = '';
+  const handleGetKey = () => {
     db.ref('campaigns').on('value', snapshot => {
       snapshot.forEach(needItem => {
         if (needItem.val().id === id) {
-          campaignDeleteKey = needItem.key;
+          setGetKey(needItem.key);
+        }
+      });
+    });
+    return () => {
+      db.ref('campaigns').off();
+    };
+  };
+
+  const handleDeleteCampaign = () => {
+    db.ref('campaigns').on('value', snapshot => {
+      snapshot.forEach(needItem => {
+        if (needItem.val().id === id) {
+          setGetKey(needItem.key);
         }
       });
     });
 
-    try {
-      db.ref(`campaigns/${campaignDeleteKey}`)
-        .remove()
-        .then(() => {
-          setIsLoading(false);
-          toastRef.current.show('Campaña eliminada correctamente');
-        })
-        .catch(() => {
-          setIsLoading(false);
-          toastRef.current.show(
-            'Ha ocurrido un error, por favor intente nuevamente más tarde',
-          );
-        });
-    } catch (e) {
-      setIsLoading(false);
-      toastRef.current.show(
-        'Ha ocurrido un error, por favor intente nuevamente más tarde',
-      );
+    if (getkey) {
+      setIsLoading(true);
+      setLoadingText('Eliminando campaña, espere');
+      try {
+        db.ref(`campaigns/${getkey}`)
+          .remove()
+          .then(() => {
+            setIsLoading(false);
+            toastRef.current.show('Campaña eliminada correctamente');
+          })
+          .catch(() => {
+            setIsLoading(false);
+            toastRef.current.show(
+              'Ha ocurrido un error, por favor intente nuevamente más tarde',
+            );
+          });
+      } catch (e) {
+        setIsLoading(false);
+        toastRef.current.show(
+          'Ha ocurrido un error, por favor intente nuevamente más tarde',
+        );
+      }
+    } else {
+      toastRef.current.show('Ha ocurrido un error, por favor intelo de nuevo');
+      handleGetKey();
     }
 
     return () => {
@@ -290,7 +308,7 @@ function AnimalCampaign({animalCampaign, navigation, toastRef}) {
         </View>
       )}
 
-      <Carousel arrayImages={images} height={200} width={screenWidth} />
+      <Carousel arrayImages={images} height={350} width={screenWidth} />
       <Text style={styles.date}>
         Publicado:{'  '}
         {new Date(updatedAt).getDate()}/{new Date(updatedAt).getMonth() + 1}/

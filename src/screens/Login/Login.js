@@ -178,6 +178,7 @@ const Login = () => {
       </TouchableOpacity>
       <Loading isVisible={loading} text={loadingText} />
       <Modal isVisible={isVisible} setIsVisible={setIsVisible}>
+        <Text style={styles.password}>Reestablecimiento de contraseña</Text>
         <Formik
           validationSchema={schemaVerify}
           initialValues={{email: ''}}
@@ -243,6 +244,11 @@ const styles = StyleSheet.create({
   btnContainerLogin: {
     marginTop: 20,
     width: '95%',
+  },
+  password: {
+    textAlign: 'center',
+    color: '#000',
+    fontSize: 16,
   },
   btnLogin: {
     backgroundColor: '#00a680',

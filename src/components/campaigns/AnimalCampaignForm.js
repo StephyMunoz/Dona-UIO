@@ -91,10 +91,9 @@ const AnimalCampaignForm = () => {
   const handleLaunchCamera = async () => {
     await launchImageLibrary(options, response => {
       if (response.didCancel) {
-        console.log('User cancelled image picker');
         toastRef.current.show('Ha cancelado el selector de imágenes');
       } else if (response.errorCode) {
-        console.log('ImagePicker Error: ', response.errorCode);
+        toastRef.current.show('Ha ocurrido un error ', response.errorCode);
       } else {
         setImagesSelected([...imagesSelected, response.assets[0].uri]);
       }
@@ -227,9 +226,11 @@ const AnimalCampaignForm = () => {
                   </Text>
                 )}
               </View>
-              <Text style={styles.subtitle}>Seleccione una imagen</Text>
+              <Text style={styles.subtitle}>
+                Seleccione una imagen (Máximo 4)
+              </Text>
               <View style={styles.viewImages}>
-                {size(imagesSelected) < 5 && (
+                {size(imagesSelected) < 4 && (
                   <TouchableOpacity onPress={handleLaunchCamera}>
                     <Icon
                       type="material-community"

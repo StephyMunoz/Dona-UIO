@@ -68,6 +68,7 @@ function AnimalNeed({animalNeed, navigation, toastRef}) {
   } = animalNeed.item;
   const [isLoading, setIsLoading] = useState(false);
   const [loadingText, setLoadingText] = useState(null);
+  const [deleteKey, setDeleteKey] = useState(null);
 
   const handleEdit = () => {
     Alert.alert(
@@ -89,8 +90,10 @@ function AnimalNeed({animalNeed, navigation, toastRef}) {
       createdAt,
     });
   };
+  console.log('hii', deleteKey);
 
   const handleDelete = () => {
+    handleGetDeleteKey();
     Alert.alert(
       'Eliminar requerimiento',
       '¿Esta seguro que desea eliminar esta publicación?',
@@ -101,40 +104,61 @@ function AnimalNeed({animalNeed, navigation, toastRef}) {
     );
   };
 
-  const handleDeletePublication = () => {
-    setIsLoading(true);
-    setLoadingText('Eliminando requerimiento');
-    let needFoundationKey = '';
-    db.ref(`foundations/${createdBy}`).on('value', snapshot => {
+  const handleGetDeleteKey = () => {
+    db.ref('foundations').on('value', snapshot => {
       snapshot.forEach(needItem => {
         if (
           needItem.val().createdBy === createdBy &&
           needItem.val().id === id
         ) {
-          needFoundationKey = needItem.key;
+          setDeleteKey(needItem.key);
         }
       });
     });
 
-    try {
-      db.ref(`foundations/${needFoundationKey}`)
-        .remove()
-        .then(() => {
-          setIsLoading(false);
-          toastRef.current.show('Publicación eliminada exitosamente');
-          navigation.navigate('animal_needs');
-        })
-        .catch(() => {
-          setIsLoading(false);
-          toastRef.current.show(
-            'Ha ocurrido un error, por favor intente nuevamente más tarde',
-          );
-        });
-    } catch (e) {
-      setIsLoading(false);
-      toastRef.current.show(
-        'Ha ocurrido un error, por favor intente nuevamente más tarde',
-      );
+    return () => {
+      db.ref('foundations').off();
+    };
+  };
+
+  const handleDeletePublication = () => {
+    db.ref('foundations').on('value', snapshot => {
+      snapshot.forEach(needItem => {
+        if (
+          needItem.val().createdBy === createdBy &&
+          needItem.val().id === id
+        ) {
+          setDeleteKey(needItem.key);
+        }
+      });
+    });
+
+    if (deleteKey) {
+      setIsLoading(true);
+      setLoadingText('Eliminando requerimiento');
+      try {
+        db.ref(`foundations/${deleteKey}`)
+          .remove()
+          .then(() => {
+            setIsLoading(false);
+            toastRef.current.show('Publicación eliminada exitosamente');
+            navigation.navigate('animal_needs');
+          })
+          .catch(() => {
+            setIsLoading(false);
+            toastRef.current.show(
+              'Ha ocurrido un error, por favor intente nuevamente más tarde',
+            );
+          });
+      } catch (e) {
+        setIsLoading(false);
+        toastRef.current.show(
+          'Ha ocurrido un error, por favor intente nuevamente más tarde',
+        );
+      }
+    } else {
+      toastRef.current.show('Ha ocurrido un error, vuelva a intentarlo');
+      handleGetDeleteKey();
     }
 
     return () => {
