@@ -77,30 +77,40 @@ const ProfileOptions = () => {
       skipBackup: true,
       path: 'images,',
     },
+    quality: 1,
+    maxWidth: 2048,
+    maxHeight: 2048,
   };
 
   const changeAvatar = async () => {
     await launchImageLibrary(options, response => {
       if (response.didCancel) {
-        toastRef.current.show('Selección de imágenes cancelada');
+        toastRef.current.show('Seleccion de imagen cancelada');
       } else if (response.errorCode) {
-        toastRef.current.show('Error al subir al imagen, intente más tarde');
+        toastRef.current.show('Ha ocurrido un error ', response.errorCode);
       } else {
-        uploadImage(response.assets[0].uri)
-          .then(() => {
-            updatePhotoUrl();
-          })
-          .catch(() => {
-            toastRef.current.show('Error al actualizar el avatar.');
-          });
+        if (response.assets[0].type.split('/')[0] === 'image') {
+          if (response.assets[0].fileSize > 2000000) {
+            toastRef.current.show('La imagen es muy pesada, excede los 2 MB');
+          } else {
+            uploadImage(response.assets[0].uri)
+              .then(() => {
+                updatePhotoUrl();
+              })
+              .catch(() => {
+                toastRef.current.show('Error al actualizar el avatar.');
+              });
+          }
+        } else {
+          toastRef.current.show('Solo se permiten imagenes');
+        }
       }
     });
   };
   const uploadImage = async uri => {
     setTextLoading('Actualizando Avatar');
     setLoading(true);
-
-    const response = await fetch(uri);
+    const response = await fetch(uri.name);
     const blob = await response.blob();
     const ref = storage.ref().child(`avatar/${user.uid}`);
     return ref.put(blob);
@@ -119,7 +129,6 @@ const ProfileOptions = () => {
       })
       .catch(() => {
         toastRef.current.show('Error al actualizar el avatar.');
-        // console.log('Error al actualizar el avatar');
       });
   };
 
@@ -146,22 +155,6 @@ const ProfileOptions = () => {
   const showLocation = () => {
     setShowModalLocation(true);
   };
-
-  // const getAlert = () => {
-  //   console.log('close sesion');
-  //   Alert.alert('Cerrar sesión', '¿Estás seguro/a que deseas cerrar sesión', [
-  //     {
-  //       text: 'Cancelar',
-  //       // onPress: () => console.log('Cancel Pressed'),
-  //     },
-  //     {text: 'Cerrar sesión', onPress: () => setChangeLogout(true)},
-  //   ]);
-  // };
-
-  // const handleLogout = () => {
-  //   logout;
-  //   navigation.navigate('register');
-  // };
 
   return (
     <ScrollView>

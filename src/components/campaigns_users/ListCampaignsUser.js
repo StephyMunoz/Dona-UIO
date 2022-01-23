@@ -4,6 +4,7 @@ import {
   Alert,
   Dimensions,
   FlatList,
+  RefreshControl,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -12,10 +13,10 @@ import {
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {Avatar, Divider, Icon} from 'react-native-elements';
 import {size} from 'lodash';
-import Carousel from '../components/Carousel';
-import {db, storage} from '../firebase';
-import {useAuth} from '../lib/auth';
-import Loading from './Loading';
+import Carousel from '../Carousel';
+import {db, storage} from '../../firebase';
+import {useAuth} from '../../lib/auth';
+import Loading from '../Loading';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -24,20 +25,41 @@ const ListCampaignsUser = ({
   isLoading,
   toastRef,
   handleLoadMore,
+  setRefresh,
 }) => {
   const navigation = useNavigation();
+  const [refreshing, setRefreshing] = useState(false);
+
+  const wait = timeout => {
+    return new Promise(resolve => setTimeout(resolve, timeout));
+  };
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    setRefresh(true);
+    wait(2000).then(() => setRefreshing(false));
+  }, [setRefresh]);
 
   return (
     <View>
-      {size(animalCampaigns) > 0 ? (
+      {size(animalCampaigns) > 0 && (
         <FlatList
           data={animalCampaigns}
           initialNumToRender={5}
+          // extraData={refresh}
+          refreshControl={
+            <RefreshControl
+              enabled={true}
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+            />
+          }
           renderItem={campaign => (
             <AnimalCampaign
               animalCampaign={campaign}
               navigation={navigation}
               toastRef={toastRef}
+              setRefresh={setRefresh}
             />
           )}
           keyExtractor={(item, index) => index.toString()}
@@ -45,17 +67,12 @@ const ListCampaignsUser = ({
           onEndReached={handleLoadMore}
           ListFooterComponent={<FooterList isLoading={isLoading} />}
         />
-      ) : (
-        <View style={styles.loaderAnimalCampaigns}>
-          <ActivityIndicator size="large" />
-          <Text>Cargando campañas</Text>
-        </View>
       )}
     </View>
   );
 };
 
-function AnimalCampaign({animalCampaign, navigation, toastRef}) {
+function AnimalCampaign({animalCampaign, navigation, toastRef, setRefresh}) {
   const {
     id,
     images,
@@ -71,30 +88,28 @@ function AnimalCampaign({animalCampaign, navigation, toastRef}) {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingText, setLoadingText] = useState(null);
   const [favorite, setFavorite] = useState(false);
-  const [getkey, setGetKey] = useState(null);
+  const [reloadData, setReloadData] = useState(false);
   const {user} = useAuth();
 
   useFocusEffect(
     useCallback(() => {
       if (user) {
-        db.ref('favorites').on('value', snapshot => {
+        db.ref(`users/${user.uid}/favorites`).on('value', snapshot => {
           snapshot.forEach(fav => {
             const q = fav.val();
-            if (q.idFoundation === createdBy) {
-              if (q.idUser === user.uid) {
-                setFavorite(true);
-              }
+            if (q === createdBy) {
+              setFavorite(true);
+              setReloadData(reloadData);
+              setRefresh(true);
             }
           });
         });
       }
-
       return () => {
-        db.ref('favorites').off();
+        db.ref(`users/${user.uid}/favorites`).off();
       };
-    }, [createdBy, user]),
+    }, [createdBy, reloadData, setRefresh, user]),
   );
-
   useEffect(() => {
     db.ref(`users/${createdBy}`).on('value', snapshot => {
       setFoundation(snapshot.val());
@@ -107,13 +122,13 @@ function AnimalCampaign({animalCampaign, navigation, toastRef}) {
         setAvatar(response);
       })
       .catch(() => {
-        console.log('Error al descargar avatar');
+        toastRef.currentUser.show('Error al descargar avatar');
       });
 
     return () => {
       db.ref(`users/${createdBy}`).off();
     };
-  }, [createdBy]);
+  }, [createdBy, toastRef.currentUser]);
 
   if (!avatar) {
     return <ActivityIndicator />;
@@ -125,46 +140,49 @@ function AnimalCampaign({animalCampaign, navigation, toastRef}) {
         'Para usar el sistema de favoritos tienes que estar logeado',
       );
     } else if (user && user.role === 'user') {
-      const payload = {
-        idUser: user.uid,
-        idFoundation: createdBy,
-      };
-      db.ref('favorites')
+      db.ref(`users/${user.uid}/favorites`)
         .push()
-        .set(payload)
+        .set(createdBy)
         .then(() => {
           setFavorite(true);
+          setReloadData(true);
           toastRef.current.show('Fundación añadida a favoritos');
         })
         .catch(() => {
           toastRef.current.show('Error al añadir la fundación a favoritos');
         });
     }
-    db.ref('favorites').off();
+    db.ref(`users/${user.uid}/favorites`).off();
   };
 
   const removeFavorite = () => {
-    let idRemove = '';
-    db.ref('favorites').on('value', snapshot => {
-      snapshot.forEach(fav => {
-        const q = fav.val();
-        if (q.idFoundation === createdBy) {
-          if (q.idUser === user.uid) {
-            idRemove = fav.key;
+    if (!user) {
+      toastRef.current.show(
+        'Para usar el sistema de favoritos tienes que estar logeado',
+      );
+    } else if (user && user.role === 'user') {
+      db.ref(`users/${user.uid}/favorites`).on('value', snapshot => {
+        snapshot.forEach(fav => {
+          const q = fav.val();
+          if (q === createdBy) {
+            setFavorite(false);
+            db.ref(`users/${user.uid}/favorites/${fav.key}`)
+              .remove()
+              .then(() => {
+                setFavorite(false);
+                setReloadData(true);
+                setRefresh(true);
+                toastRef.current.show('Fundación eliminada de favoritos');
+              })
+              .catch(() => {
+                toastRef.current.show(
+                  'Error al eliminar el restaurante de favoritos',
+                );
+              });
           }
-        }
+        });
       });
-    });
-
-    db.ref(`favorites/${idRemove}`)
-      .remove()
-      .then(() => {
-        setFavorite(false);
-        toastRef.current.show('Fundación eliminada de favoritos');
-      })
-      .catch(() => {
-        toastRef.current.show('Error al eliminar el restaurante de favoritos');
-      });
+    }
     db.ref('favorites').off();
   };
 
@@ -185,54 +203,30 @@ function AnimalCampaign({animalCampaign, navigation, toastRef}) {
     );
   };
 
-  const handleGetKey = () => {
-    db.ref('campaigns').on('value', snapshot => {
-      snapshot.forEach(needItem => {
-        if (needItem.val().id === id) {
-          setGetKey(needItem.key);
-        }
-      });
-    });
-    return () => {
-      db.ref('campaigns').off();
-    };
-  };
-
   const handleDeleteCampaign = () => {
+    setIsLoading(true);
+    setLoadingText('Eliminando campaña');
     db.ref('campaigns').on('value', snapshot => {
-      snapshot.forEach(needItem => {
-        if (needItem.val().id === id) {
-          setGetKey(needItem.key);
+      snapshot.forEach(campaign => {
+        const q = campaign.val();
+        if (q.id === id) {
+          db.ref(`campaigns/${campaign.key}`)
+            .remove()
+            .then(() => {
+              setIsLoading(false);
+              setRefresh(true);
+              setReloadData(true);
+              toastRef.current.show('Campaña eliminada correctamente');
+            })
+            .catch(() => {
+              setIsLoading(false);
+              toastRef.current.show(
+                'Ha ocurrido un error, por favor intente nuevamente más tarde',
+              );
+            });
         }
       });
     });
-
-    if (getkey) {
-      setIsLoading(true);
-      setLoadingText('Eliminando campaña, espere');
-      try {
-        db.ref(`campaigns/${getkey}`)
-          .remove()
-          .then(() => {
-            setIsLoading(false);
-            toastRef.current.show('Campaña eliminada correctamente');
-          })
-          .catch(() => {
-            setIsLoading(false);
-            toastRef.current.show(
-              'Ha ocurrido un error, por favor intente nuevamente más tarde',
-            );
-          });
-      } catch (e) {
-        setIsLoading(false);
-        toastRef.current.show(
-          'Ha ocurrido un error, por favor intente nuevamente más tarde',
-        );
-      }
-    } else {
-      toastRef.current.show('Ha ocurrido un error, por favor intelo de nuevo');
-      handleGetKey();
-    }
 
     return () => {
       db.ref('campaigns').off();
@@ -292,7 +286,7 @@ function AnimalCampaign({animalCampaign, navigation, toastRef}) {
         </View>
       )}
       {foundation && avatar && (
-        <View style={{flexDirection: 'row'}}>
+        <View style={styles.avatarView}>
           <Avatar
             source={{uri: avatar}}
             rounded
@@ -365,6 +359,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     padding: 5,
     paddingLeft: 15,
+  },
+  avatarView: {
+    flexDirection: 'row',
   },
   title: {
     fontSize: 20,

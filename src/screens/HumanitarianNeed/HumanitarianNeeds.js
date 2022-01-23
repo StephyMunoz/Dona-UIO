@@ -3,9 +3,9 @@ import {StyleSheet, Text, View} from 'react-native';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {Icon} from 'react-native-elements';
 import Toast from 'react-native-easy-toast';
-import {db} from '../firebase';
-import ListHumanitarianNeeds from '../components/humanitary_needs/ListHumanitarianNeeds';
-import {useAuth} from '../lib/auth';
+import {db} from '../../firebase';
+import ListHumanitarianNeeds from '../../components/humanitary_needs/ListHumanitarianNeeds';
+import {useAuth} from '../../lib/auth';
 
 const HumanitarianNeeds = () => {
   const navigation = useNavigation();
@@ -15,6 +15,7 @@ const HumanitarianNeeds = () => {
   const [humanitarianNeeds, setHumanitarianNeeds] = useState([]);
   const [totalFoundationNeeds, setTotalFoundationNeeds] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [refresh, setRefresh] = useState(false);
 
   useEffect(() => {
     let total = 0;
@@ -49,6 +50,7 @@ const HumanitarianNeeds = () => {
               const q = need.val();
               if (q.createdBy === user.uid) {
                 resultHumanitarianNeeds.push(q);
+                setRefresh(refresh);
               }
             });
             setHumanitarianNeeds(resultHumanitarianNeeds.reverse());
@@ -58,7 +60,7 @@ const HumanitarianNeeds = () => {
       return () => {
         db.ref('foundations').off();
       };
-    }, [user.uid]),
+    }, [user.uid, refresh]),
   );
 
   const handleLoadMore = async () => {
@@ -106,6 +108,7 @@ const HumanitarianNeeds = () => {
           handleLoadMore={handleLoadMore}
           isLoading={isLoading}
           toastRef={toastRef}
+          setRefresh={setRefresh}
         />
       )}
 

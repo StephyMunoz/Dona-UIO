@@ -1,9 +1,9 @@
 import React, {useEffect, useState} from 'react';
 import {Linking, ScrollView, StyleSheet, Text, View} from 'react-native';
 import {Avatar, Icon, ListItem, SocialIcon} from 'react-native-elements';
-import {db} from '../firebase';
-import Loading from '../components/Loading';
-import Map from '../components/Map';
+import {db} from '../../firebase';
+import Loading from '../../components/Loading';
+import Map from '../../components/Map';
 import {map} from 'lodash';
 
 const FoundationInformation = props => {

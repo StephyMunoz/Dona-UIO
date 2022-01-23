@@ -27,7 +27,6 @@ const AnimalNeedsForm = () => {
   const [loading, setLoading] = useState(false);
   const [loadingText, setLoadingText] = useState(false);
   const [imagesSelected, setImagesSelected] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
 
   const schema = yup.object().shape({
     title: yup.string().required('Ingrese un título').unique,
@@ -43,17 +42,21 @@ const AnimalNeedsForm = () => {
       skipBackup: true,
       path: 'images,',
     },
+    quality: 1,
+    maxWidth: 2048,
+    maxHeight: 2048,
+    allowsEditing: true,
   };
 
   const onFinish = async data => {
     if (size(imagesSelected) === 0) {
-      setIsLoading(false);
+      setLoading(false);
       toastRef.current.show('Seleccione al menos una imagen para continuar');
     } else {
-      setIsLoading(true);
+      setLoading(true);
       setLoadingText('Ingresando información');
       try {
-        setIsLoading(true);
+        setLoading(true);
         await uploadImageStorage().then(response => {
           db.ref('foundations')
             .push()
@@ -69,11 +72,11 @@ const AnimalNeedsForm = () => {
               id: uuid(),
             })
             .then(() => {
-              setIsLoading(false);
+              setLoading(false);
               navigation.navigate('animal_needs');
             })
-            .catch(e => {
-              setIsLoading(false);
+            .catch(() => {
+              setLoading(false);
               toastRef.current.show(
                 'Error al subir la necesidad, intentelo más tarde',
               );
@@ -88,11 +91,23 @@ const AnimalNeedsForm = () => {
   const handleLaunchCamera = async () => {
     await launchImageLibrary(options, response => {
       if (response.didCancel) {
-        toastRef.current.show('Selección de imagenes cancelada');
+        toastRef.current.show('Selección de imagen cancelada');
       } else if (response.errorCode) {
-        toastRef.current.show('Ha ocurrido un error');
+        toastRef.current.show('Ha ocurrido un error ', response.errorCode);
       } else {
-        setImagesSelected([...imagesSelected, response.assets[0].uri]);
+        if (response.assets[0].type.split('/')[0] === 'image') {
+          if (response.assets[0].fileSize > 2000000) {
+            toastRef.current.show('La imagen es muy pesada, excede los 2 MB');
+          } else {
+            if (imagesSelected.includes(response.assets[0].uri)) {
+              toastRef.current.show('Imagen ya ingresada, seleccione otra');
+            } else {
+              setImagesSelected([...imagesSelected, response.assets[0].uri]);
+            }
+          }
+        } else {
+          toastRef.current.show('Solo se permiten imágenes');
+        }
       }
     });
   };
@@ -179,7 +194,7 @@ const AnimalNeedsForm = () => {
                 }
               />
               {errors.title && (
-                <Text style={{fontSize: 10, color: 'red'}}>{errors.title}</Text>
+                <Text style={styles.errormessage}>{errors.title}</Text>
               )}
               <Text style={styles.subtitle}>
                 Tipo de alimento balanceado que necesita la fundación:{' '}
@@ -205,9 +220,7 @@ const AnimalNeedsForm = () => {
                   }
                 />
                 {errors.food && (
-                  <Text style={{fontSize: 10, color: 'red'}}>
-                    {errors.food}
-                  </Text>
+                  <Text style={styles.errormessage}>{errors.food}</Text>
                 )}
               </View>
               <Text style={styles.subtitle}>
@@ -231,9 +244,7 @@ const AnimalNeedsForm = () => {
                   numberOfLines={4}
                 />
                 {errors.medicine && (
-                  <Text style={{fontSize: 10, color: 'red'}}>
-                    {errors.medicine}
-                  </Text>
+                  <Text style={styles.errormessage}>{errors.medicine}</Text>
                 )}
               </View>
               <Text style={styles.subtitle}>Otras necesidades: </Text>
@@ -251,9 +262,7 @@ const AnimalNeedsForm = () => {
                   numberOfLines={3}
                 />
                 {errors.other && (
-                  <Text style={{fontSize: 10, color: 'red'}}>
-                    {errors.other}
-                  </Text>
+                  <Text style={styles.errormessage}>{errors.other}</Text>
                 )}
               </View>
               <Text style={styles.subtitle}>
@@ -267,11 +276,12 @@ const AnimalNeedsForm = () => {
                       name="camera"
                       color="#7a7a7a"
                       containerStyle={styles.containerIcon}
+                      size={35}
                     />
                   </TouchableOpacity>
                 )}
                 {size(imagesSelected) === 0 && (
-                  <Text style={{fontSize: 10, color: 'red'}}>
+                  <Text style={styles.errormessage}>
                     Seleccione al menos una imagen
                   </Text>
                 )}
@@ -289,7 +299,6 @@ const AnimalNeedsForm = () => {
                 title="Ingresar requerimiento"
                 disabled={!isValid}
                 containerStyle={styles.btnContainerLogin}
-                loading={isLoading}
               />
             </>
           )}
@@ -322,6 +331,10 @@ const styles = StyleSheet.create({
     textAlign: 'left',
     fontSize: 15,
     color: '#000',
+  },
+  errormessage: {
+    fontSize: 10,
+    color: 'red',
   },
   subtitleUnder: {
     textAlign: 'left',

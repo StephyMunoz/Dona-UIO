@@ -15,6 +15,7 @@ const AnimalNeeds = () => {
   const [animalNeeds, setAnimalNeeds] = useState([]);
   const [totalAnimalNeeds, setTotalAnimalNeeds] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [refresh, setRefresh] = useState(false);
 
   useEffect(() => {
     let total = 0;
@@ -46,6 +47,7 @@ const AnimalNeeds = () => {
             const q = need.val();
             if (q.createdBy === user.uid) {
               resultAnimalNeeds.push(q);
+              setRefresh(refresh);
             }
           });
           setAnimalNeeds(resultAnimalNeeds.reverse());
@@ -54,7 +56,7 @@ const AnimalNeeds = () => {
       return () => {
         db.ref('foundations').off();
       };
-    }, [user.uid]),
+    }, [user.uid, refresh]),
   );
 
   const handleLoadMore = async () => {
@@ -98,6 +100,7 @@ const AnimalNeeds = () => {
           handleLoadMore={handleLoadMore}
           isLoading={isLoading}
           toastRef={toastRef}
+          setRefresh={setRefresh}
         />
       )}
 

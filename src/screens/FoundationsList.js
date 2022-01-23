@@ -1,52 +1,72 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {
-  ActivityIndicator,
   Alert,
   FlatList,
   Image,
+  RefreshControl,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
 import {db, storage} from '../firebase';
-import Loading from '../components/Loading';
 import {size} from 'lodash';
 import {Icon} from 'react-native-elements';
 import {Divider} from 'react-native-elements/dist/divider/Divider';
 import Toast from 'react-native-easy-toast';
-import {useNavigation} from '@react-navigation/native';
+import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import avatarDefault from '../images/avatar-default.jpg';
 
 const FoundationsList = () => {
   const navigation = useNavigation();
   const toastRef = useRef();
+  const [refreshing, setRefreshing] = useState(false);
   const [foundationsList, setFoundationsList] = useState([]);
 
-  useEffect(() => {
-    let foundationList = [];
-    db.ref('users').on('value', snapshot => {
-      snapshot.forEach(foundation => {
-        if (
-          foundation.val().role === 'humanitarian_help' ||
-          foundation.val().role === 'animal_help'
-        ) {
-          foundationList.push(foundation.val());
-        }
+  useFocusEffect(
+    useCallback(() => {
+      let foundationList = [];
+      db.ref('users').on('value', snapshot => {
+        snapshot.forEach(foundation => {
+          const q = foundation.val();
+          if (q.role === 'humanitarian_help' || q.role === 'animal_help') {
+            foundationList.push(foundation.val());
+            setRefreshing(refreshing);
+          }
+        });
+        setFoundationsList(foundationList.reverse());
       });
-      setFoundationsList(foundationList);
-    });
+    }, [refreshing]),
+  );
+
+  useEffect(() => {
+    if (foundationsList.length === 0) {
+      setRefreshing(true);
+      wait(2000).then(() => setRefreshing(false));
+    }
+  }, [foundationsList.length]);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    wait(2000).then(() => setRefreshing(false));
   }, []);
 
-  if (foundationsList.length === 0) {
-    return <Loading isVisble={true} text="Cargando información" />;
-  }
+  const wait = timeout => {
+    return new Promise(resolve => setTimeout(resolve, timeout));
+  };
 
   return (
     <View>
       {size(foundationsList) > 0 ? (
         <FlatList
           data={foundationsList}
+          refreshControl={
+            <RefreshControl
+              enabled={true}
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+            />
+          }
           renderItem={foundation => (
             <Foundation
               foundation={foundation}
@@ -55,22 +75,19 @@ const FoundationsList = () => {
             />
           )}
           keyExtractor={(item, index) => index.toString()}
-          onEndReachedThreshold={0.5}
-          // onEndReached={handleLoadMore}
-          // ListFooterComponent={<FooterList isLoading={isLoading} />}
         />
       ) : (
         <View style={styles.loaderHumanitarianNeeds}>
-          <ActivityIndicator size="large" />
-          {/*<Text>Cargando requerimientos</Text>*/}
-          {/*<Loading isVisible={true} text="Cargando listado de fundaciones" />*/}
+          <Text style={styles.empty}>
+            No se encuentran fundaciones registradas
+          </Text>
         </View>
       )}
       <Toast ref={toastRef} position="center" opacity={0.9} />
     </View>
   );
 
-  function Foundation({foundation, navigation}) {
+  function Foundation({foundation}) {
     const [avatar, setAvatar] = useState(null);
     const {uid, displayName, email} = foundation.item;
 
@@ -83,7 +100,7 @@ const FoundationsList = () => {
           setAvatar(response);
         })
         .catch(() => {
-          console.log('Error al descargar avatar');
+          toastRef.current.show('Error al descargar avatar');
         });
 
       return () => {
@@ -106,7 +123,7 @@ const FoundationsList = () => {
       db.ref(`users/${uid}`)
         .remove()
         .then(() => {
-          toastRef.current.show('Publicación eliminada correctamente');
+          toastRef.current.show('Fundación eliminada correctamente');
           db.ref('foundations').on('value', snapshot => {
             snapshot.forEach(publication => {
               const q = publication.val();
@@ -121,6 +138,29 @@ const FoundationsList = () => {
               }
             });
           });
+
+          db.ref(`phones/${uid}`)
+            .remove()
+            .then(toastRef.current.show('Teléfonos eliminados'));
+
+          db.ref('users').on('value', snapshot => {
+            snapshot.forEach(item => {
+              const q = item.val();
+              if (q.role === 'user') {
+                db.ref('users/favorites').on('value', snapshot1 => {
+                  snapshot1.forEach(item2 => {
+                    const r = item2.val();
+                    if (r === uid) {
+                      db.ref(`users/favorites/${item2.key}`)
+                        .remove()
+                        .then(toastRef.current.show('Elimando'));
+                    }
+                  });
+                });
+              }
+            });
+          });
+
           db.ref('campaigns').on('value', snapshot => {
             snapshot.forEach(publication => {
               const q = publication.val();
@@ -162,7 +202,7 @@ const FoundationsList = () => {
 
     return (
       <View style={styles.viewFoundation}>
-        <View style={{flexDirection: 'row'}}>
+        <View style={styles.viewNavigation}>
           <TouchableOpacity onPress={handleNavigation}>
             <Text style={styles.foundation}>{displayName}</Text>
             <Text style={styles.descriptionCampaign}>{email}</Text>
@@ -178,9 +218,17 @@ const FoundationsList = () => {
 
         <View style={styles.viewAvatar}>
           {avatar ? (
-            <Image source={{uri: avatar}} style={styles.avatar} />
+            <Image
+              source={{uri: avatar}}
+              style={styles.avatar}
+              resizeMode="contain"
+            />
           ) : (
-            <Image source={avatarDefault} style={styles.avatar} />
+            <Image
+              source={avatarDefault}
+              style={styles.avatar}
+              resizeMode="contain"
+            />
           )}
         </View>
         <Divider style={styles.divider} width={1} />
@@ -195,7 +243,10 @@ const styles = StyleSheet.create({
   viewFoundation: {
     marginTop: 20,
     color: '#fff',
-    // / marginLeft: 20,
+  },
+  empty: {
+    textAlign: 'center',
+    fontSize: 30,
   },
   viewAvatar: {
     alignItems: 'center',
@@ -210,6 +261,9 @@ const styles = StyleSheet.create({
     width: 250,
     height: 150,
     alignItems: 'center',
+  },
+  viewNavigation: {
+    flexDirection: 'row',
   },
   foundation: {
     color: '#000',

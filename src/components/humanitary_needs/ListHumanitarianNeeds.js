@@ -1,9 +1,10 @@
-import React, {useState} from 'react';
+import React, {useCallback, useState} from 'react';
 import {
   ActivityIndicator,
   Alert,
   Dimensions,
   FlatList,
+  RefreshControl,
   StyleSheet,
   Text,
   View,
@@ -23,19 +24,39 @@ const ListHumanitarianNeeds = ({
   isLoading,
   toastRef,
   handleLoadMore,
+  setRefresh,
 }) => {
   const navigation = useNavigation();
+  const [refreshing, setRefreshing] = useState(false);
+
+  const wait = timeout => {
+    return new Promise(resolve => setTimeout(resolve, timeout));
+  };
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    setRefresh(true);
+    wait(2000).then(() => setRefreshing(false));
+  }, [setRefresh]);
 
   return (
     <View>
       {size(humanitarianNeeds) > 0 ? (
         <FlatList
           data={humanitarianNeeds}
+          refreshControl={
+            <RefreshControl
+              enabled={true}
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+            />
+          }
           renderItem={need => (
             <HumanitarianNeed
               humanitarianNeed={need}
               toastRef={toastRef}
               navigation={navigation}
+              setRefresh={setRefresh}
             />
           )}
           keyExtractor={(item, index) => index.toString()}
@@ -46,15 +67,18 @@ const ListHumanitarianNeeds = ({
       ) : (
         <View style={styles.loaderHumanitarianNeeds}>
           <ActivityIndicator size="large" />
-          {/*<Text>Cargando requerimientos</Text>*/}
-          {/*<Loading isVisible={true} text="Cargando requerimientos" />*/}
         </View>
       )}
     </View>
   );
 };
 
-function HumanitarianNeed({humanitarianNeed, toastRef, navigation}) {
+function HumanitarianNeed({
+  humanitarianNeed,
+  toastRef,
+  navigation,
+  setRefresh,
+}) {
   const {
     id,
     images,
@@ -68,7 +92,6 @@ function HumanitarianNeed({humanitarianNeed, toastRef, navigation}) {
   } = humanitarianNeed.item;
   const [loading, setLoading] = useState(false);
   const [loadingText, setLoadingText] = useState(null);
-  const [deleteKey, setDeleteKey] = useState(null);
 
   const handleEdit = () => {
     Alert.alert(
@@ -93,7 +116,6 @@ function HumanitarianNeed({humanitarianNeed, toastRef, navigation}) {
   };
 
   const handleDelete = () => {
-    getDeleteKey();
     Alert.alert(
       'Eliminar requerimiento',
       '¿Esta seguro que desea eliminar esta publicación?',
@@ -101,63 +123,29 @@ function HumanitarianNeed({humanitarianNeed, toastRef, navigation}) {
     );
   };
 
-  const getDeleteKey = () => {
-    let needFoundationKey = null;
-    db.ref('foundations').on('value', snapshot => {
-      snapshot.forEach(needItem => {
-        if (
-          needItem.val().createdBy === createdBy &&
-          needItem.val().id === id
-        ) {
-          needFoundationKey = needItem.key;
-        }
-      });
-      setDeleteKey(needFoundationKey);
-    });
-    return () => {
-      db.ref('foundations').off();
-    };
-  };
-
   const handlePublication = () => {
+    setLoadingText('Eliminando requerimiento');
     setLoading(true);
-    setLoadingText('Eliminando publicación');
     db.ref('foundations').on('value', snapshot => {
-      snapshot.forEach(needItem => {
-        if (
-          needItem.val().createdBy === createdBy &&
-          needItem.val().id === id
-        ) {
-          setDeleteKey(needItem.key);
+      snapshot.forEach(publication => {
+        const q = publication.val();
+        if (q.id === id) {
+          db.ref(`foundations/${publication.key}`)
+            .remove()
+            .then(() => {
+              setLoading(false);
+              setRefresh(true);
+              toastRef.current.show('Publicación eliminada exitosamente');
+            })
+            .catch(() => {
+              setLoading(false);
+              toastRef.current.show(
+                'Ha ocurrido un error, por favor intente nuevamente más tarde ',
+              );
+            });
         }
       });
     });
-
-    if (deleteKey) {
-      try {
-        db.ref(`foundations/${deleteKey}`)
-          .remove()
-          .then(() => {
-            setLoading(false);
-            toastRef.current.show('Publicación eliminada correctamente');
-          })
-          .catch(() => {
-            setLoading(false);
-            toastRef.current.show(
-              'Ha ocurrido un error, por favor intente nuevamente más tarde',
-            );
-          });
-      } catch (e) {
-        setLoading(false);
-        toastRef.current.show(
-          'Ha ocurrido un error, por favor intente nuevamente más tarde',
-        );
-      }
-    } else {
-      toastRef.current.show('Por favor vuelvalo a intentar nuevamente');
-      getDeleteKey();
-    }
-
     return () => {
       db.ref('foundations').off();
     };
@@ -181,14 +169,14 @@ function HumanitarianNeed({humanitarianNeed, toastRef, navigation}) {
           containerStyle={styles.iconTrash}
           onPress={handleDelete}
         />
-        <Carousel arrayImages={images} height={250} width={screenWidth - 20} />
+        <Carousel arrayImages={images} height={350} width={screenWidth - 20} />
         <Text style={styles.date}>
           Publicado:{'  '}
           {new Date(updatedAt).getDate()}/{new Date(updatedAt).getMonth() + 1}/
           {new Date(updatedAt).getFullYear()}{' '}
           {new Date(updatedAt).toLocaleTimeString()}
         </Text>
-        <View style={styles.needItem}>
+        <View>
           {food !== '' && (
             <View>
               <Text style={styles.requirements}>

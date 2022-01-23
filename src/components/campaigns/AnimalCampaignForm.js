@@ -34,7 +34,6 @@ const AnimalCampaignForm = () => {
       .string()
       .required('Ingrese una breve descripción de la campaña'),
     other: yup.string(),
-    // images: yup.mixed().required('Ingrese al menos una fotografía'),
   });
 
   const options = {
@@ -43,11 +42,13 @@ const AnimalCampaignForm = () => {
       skipBackup: true,
       path: 'images,',
     },
+    quality: 1,
+    maxWidth: 2048,
+    maxHeight: 2048,
   };
 
   const onFinish = async data => {
     if (size(imagesSelected) === 0) {
-      console.log('Error');
       toastRef.current.show(
         'Debe seleccionar al menos una imagen para continuar',
       );
@@ -56,7 +57,7 @@ const AnimalCampaignForm = () => {
       setLoading(true);
       try {
         setLoading(true);
-        setLoadingText('Ingresando la información');
+        setLoadingText('Ingresando campaña');
         await uploadImageStorage().then(response => {
           db.ref('campaigns')
             .push()
@@ -70,17 +71,13 @@ const AnimalCampaignForm = () => {
               createdBy: user.uid,
               id: uuid(),
             })
-            .then(snapshot => {
-              setLoading(false);
-              navigation.navigate('animalCampaign');
-            })
-            .catch(e => {
-              setLoading(false);
-              console.log('e', e);
+            .then(setLoading(false), navigation.navigate('animalCampaign'))
+            .catch(
+              setLoading(false),
               toastRef.current.show(
                 'Error al subir la campaña, intentelo más tarde',
-              );
-            });
+              ),
+            );
         });
       } catch (e) {
         setLoading(false);
@@ -91,11 +88,23 @@ const AnimalCampaignForm = () => {
   const handleLaunchCamera = async () => {
     await launchImageLibrary(options, response => {
       if (response.didCancel) {
-        toastRef.current.show('Ha cancelado el selector de imágenes');
+        toastRef.current.show('Selección de imagen cancelada');
       } else if (response.errorCode) {
         toastRef.current.show('Ha ocurrido un error ', response.errorCode);
       } else {
-        setImagesSelected([...imagesSelected, response.assets[0].uri]);
+        if (response.assets[0].type.split('/')[0] === 'image') {
+          if (response.assets[0].fileSize > 2000000) {
+            toastRef.current.show('La imagen es muy pesada, excede los 2 MB');
+          } else {
+            if (imagesSelected.includes(response.assets[0].uri)) {
+              toastRef.current.show('Imagen ya ingresada, elija otra');
+            } else {
+              setImagesSelected([...imagesSelected, response.assets[0].uri]);
+            }
+          }
+        } else {
+          toastRef.current.show('Solo se permiten imagenes');
+        }
       }
     });
   };
@@ -182,7 +191,7 @@ const AnimalCampaignForm = () => {
                 }
               />
               {errors.title && (
-                <Text style={{fontSize: 10, color: 'red'}}>{errors.title}</Text>
+                <Text style={styles.errorMessage}>{errors.title}</Text>
               )}
               <Text style={styles.subtitle}>Descripción de la campaña: </Text>
               <View style={styles.textInput}>
@@ -199,7 +208,7 @@ const AnimalCampaignForm = () => {
                   numberOfLines={3}
                 />
                 {errors.campaignDescription && (
-                  <Text style={{fontSize: 10, color: 'red'}}>
+                  <Text style={styles.errorMessage}>
                     {errors.campaignDescription}
                   </Text>
                 )}
@@ -221,9 +230,7 @@ const AnimalCampaignForm = () => {
                   numberOfLines={4}
                 />
                 {errors.other && (
-                  <Text style={{fontSize: 10, color: 'red'}}>
-                    {errors.other}
-                  </Text>
+                  <Text style={styles.errorMessage}>{errors.other}</Text>
                 )}
               </View>
               <Text style={styles.subtitle}>
@@ -237,11 +244,12 @@ const AnimalCampaignForm = () => {
                       name="camera"
                       color="#7a7a7a"
                       containerStyle={styles.containerIcon}
+                      size={35}
                     />
                   </TouchableOpacity>
                 )}
                 {size(imagesSelected) === 0 && (
-                  <Text style={{fontSize: 10, color: 'red'}}>
+                  <Text style={styles.errorMessage}>
                     Seleccione al menos una imagen
                   </Text>
                 )}
@@ -283,6 +291,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#000',
     textAlign: 'center',
+  },
+  errorMessage: {
+    fontSize: 10,
+    color: 'red',
   },
   textPlaceholder: {
     color: '#000',

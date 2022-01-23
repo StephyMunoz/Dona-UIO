@@ -113,14 +113,14 @@ const Navigation = () => {
             options={{title: 'Buscar'}}
           />
           <Tab.Screen
-            name="campaigns"
-            component={CampaignsStack}
-            options={{title: 'Campañas'}}
-          />
-          <Tab.Screen
             name="favorites_stack"
             component={FavoritesStack}
             options={{title: 'Favoritos'}}
+          />
+          <Tab.Screen
+            name="campaigns"
+            component={CampaignsStack}
+            options={{title: 'Campañas'}}
           />
           <Tab.Screen
             name="profile"
@@ -145,16 +145,15 @@ const Navigation = () => {
             component={FoundationsStack}
             options={{title: 'Inicio'}}
           />
-
-          <Tab.Screen
-            name="animal-campaigns"
-            component={AnimalCareCampaignsStack}
-            options={{title: 'Campañas'}}
-          />
           <Tab.Screen
             name="animalNeeds"
             component={AnimalNeedsStack}
             options={{title: 'Necesidades'}}
+          />
+          <Tab.Screen
+            name="animal-campaigns"
+            component={AnimalCareCampaignsStack}
+            options={{title: 'Campañas'}}
           />
           <Tab.Screen
             name="info_foundation"

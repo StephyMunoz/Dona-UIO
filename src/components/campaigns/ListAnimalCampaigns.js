@@ -1,9 +1,10 @@
-import React, {useState} from 'react';
+import React, {useCallback, useState} from 'react';
 import {
   ActivityIndicator,
   Alert,
   Dimensions,
   FlatList,
+  RefreshControl,
   StyleSheet,
   Text,
   View,
@@ -23,19 +24,39 @@ const ListAnimalCampaigns = ({
   isLoading,
   toastRef,
   handleLoadMore,
+  setRefresh,
 }) => {
   const navigation = useNavigation();
+  const [refreshing, setRefreshing] = useState(false);
+
+  const wait = timeout => {
+    return new Promise(resolve => setTimeout(resolve, timeout));
+  };
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    setRefresh(true);
+    wait(2000).then(() => setRefreshing(false));
+  }, [setRefresh]);
 
   return (
     <View>
       {size(animalCampaigns) > 0 ? (
         <FlatList
           data={animalCampaigns}
+          refreshControl={
+            <RefreshControl
+              enabled={true}
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+            />
+          }
           renderItem={campaign => (
             <AnimalCampaign
               animalCampaign={campaign}
               toastRef={toastRef}
               navigation={navigation}
+              setRefresh={setRefresh}
             />
           )}
           keyExtractor={(item, index) => index.toString()}
@@ -55,7 +76,7 @@ const ListAnimalCampaigns = ({
   );
 };
 
-function AnimalCampaign({animalCampaign, navigation, toastRef}) {
+function AnimalCampaign({animalCampaign, navigation, toastRef, setRefresh}) {
   const {
     id,
     images,
@@ -68,7 +89,6 @@ function AnimalCampaign({animalCampaign, navigation, toastRef}) {
   } = animalCampaign.item;
   const [isLoading, setIsLoading] = useState(false);
   const [loadingText, setLoadingText] = useState(null);
-  const [deleteKey, setDeleteKey] = useState(null);
 
   const handleEdit = () => {
     Alert.alert(
@@ -92,7 +112,6 @@ function AnimalCampaign({animalCampaign, navigation, toastRef}) {
   };
 
   const handleDelete = () => {
-    getDeleteKey();
     Alert.alert(
       'Eliminar campaña',
       '¿Esta seguro que desea eliminar esta campaña?',
@@ -103,58 +122,29 @@ function AnimalCampaign({animalCampaign, navigation, toastRef}) {
     );
   };
 
-  const getDeleteKey = () => {
-    if (!deleteKey) {
-      let campaignKey = null;
-      db.ref('campaigns').on('value', snapshot => {
-        snapshot.forEach(needItem => {
-          if (needItem.val().id === id) {
-            campaignKey = needItem.key;
-          }
-        });
-      });
-      setDeleteKey(campaignKey);
-    }
-  };
-
-  console.log('jjj', deleteKey);
-
   const handleDeletePublication = () => {
+    setIsLoading(true);
+    setLoadingText('Eliminando campaña');
     db.ref('campaigns').on('value', snapshot => {
-      snapshot.forEach(needItem => {
-        if (needItem.val().id === id) {
-          setDeleteKey(needItem.key);
+      snapshot.forEach(campaign => {
+        const q = campaign.val();
+        if (q.id === id) {
+          db.ref(`campaigns/${campaign.key}`)
+            .remove()
+            .then(() => {
+              setIsLoading(false);
+              setRefresh(true);
+              toastRef.current.show('Publicación eliminada exitosamente');
+            })
+            .catch(() => {
+              setIsLoading(false);
+              toastRef.current.show(
+                'Ha ocurrido un error, por favor intente nuevamente más tarde ',
+              );
+            });
         }
       });
     });
-
-    if (deleteKey) {
-      setIsLoading(true);
-      setLoadingText('Eliminando campaña');
-      try {
-        db.ref(`campaigns/${deleteKey}`)
-          .remove()
-          .then(() => {
-            setIsLoading(false);
-            toastRef.current.show('Publicación eliminada exitosamente');
-          })
-          .catch(e => {
-            setIsLoading(false);
-            toastRef.current.show(
-              'Ha ocurrido un error, por favor intente nuevamente más tarde ',
-              e,
-            );
-          });
-      } catch (e) {
-        setIsLoading(false);
-        toastRef.current.show(
-          'Ha ocurrido un error, por favor intente nuevamente más tarde',
-        );
-      }
-    } else {
-      toastRef.current.show('Ha ocurrido un error, vuelva a intentarlo');
-      getDeleteKey();
-    }
 
     return () => {
       db.ref('campaigns').off();
@@ -179,7 +169,7 @@ function AnimalCampaign({animalCampaign, navigation, toastRef}) {
           containerStyle={styles.iconTrash}
           onPress={handleDelete}
         />
-        <Carousel arrayImages={images} height={250} width={screenWidth - 20} />
+        <Carousel arrayImages={images} height={350} width={screenWidth - 20} />
         <Text style={styles.date}>
           Publicado:{'  '}
           {new Date(updatedAt).getDate()}/{new Date(updatedAt).getMonth() + 1}/

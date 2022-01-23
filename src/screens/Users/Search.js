@@ -2,22 +2,19 @@ import React, {useEffect, useState} from 'react';
 import {FlatList, Image, StyleSheet, Text, View} from 'react-native';
 import {Avatar, Icon, ListItem, SearchBar} from 'react-native-elements';
 import {useNavigation} from '@react-navigation/native';
-import {db, storage} from '../firebase';
-import notFound from '../images/no-result-found.png';
-import avatarNotFound from '../images/avatar-default.jpg';
+import {db, storage} from '../../firebase';
+import notFound from '../../images/no-result-found.png';
+import avatarNotFound from '../../images/avatar-default.jpg';
 
 const Search = () => {
   const navigation = useNavigation();
   const [search, setSearch] = useState('');
-  const [searchLowercase, setSearchLowercase] = useState('');
   const [foundations, setFoundations] = useState([]);
 
   useEffect(() => {
     const getFoundationsSearch = async () => {
       let listFoundations = [];
       if (search !== '') {
-        setSearchLowercase(search.toLowerCase());
-        console.log(searchLowercase);
         await db
           .ref('users')
           .orderByChild('displayName')
@@ -31,7 +28,6 @@ const Search = () => {
                 item.val().role === 'animal_help'
               ) {
                 listFoundations.push(q);
-                console.log(q);
               }
             });
             setFoundations(listFoundations);
@@ -64,11 +60,11 @@ const Search = () => {
           keyExtractor={(item, index) => index.toString()}
         />
       ) : (
-        <View style={{flex: 1, alignItems: 'center', marginTop: 150}}>
+        <View style={styles.styleView}>
           <Image
             source={notFound}
             resizeMode="cover"
-            style={{width: 200, height: 200}}
+            style={styles.imageView}
           />
         </View>
       )}
@@ -83,7 +79,6 @@ function Foundation(props) {
   const {uid, displayName, email} = foundation.item;
   const [avatar, setAvatar] = useState(null);
 
-  console.log('foundaation', foundation);
   useEffect(() => {
     storage
       .ref()
@@ -169,5 +164,14 @@ const styles = StyleSheet.create({
     marginRight: 10,
     marginLeft: 10,
     marginBottom: 10,
+  },
+  styleView: {
+    flex: 1,
+    alignItems: 'center',
+    marginTop: 150,
+  },
+  imageView: {
+    width: 200,
+    height: 200,
   },
 });

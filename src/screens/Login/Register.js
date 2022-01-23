@@ -1,13 +1,5 @@
 import React, {useRef, useState} from 'react';
-import {
-  Alert,
-  Image,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import {Image, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {Avatar, Button, Icon, Input} from 'react-native-elements';
 import Loading from '../../components/Loading';
 import {Formik} from 'formik';
@@ -79,20 +71,7 @@ const Register = ({role}) => {
           });
           await auth.currentUser.updateProfile({displayName: data.displayName});
 
-          await auth.currentUser
-            .sendEmailVerification()
-            .then(
-              toastRef.current.show(
-                'Se ha enviado un email de verificación a tu correo electrónico',
-                Alert.alert(
-                  'Completar verificación',
-                  'Se ha enviado un email de verificación a tu correo electrónico',
-                ),
-              ),
-            );
-
           await uploadImage(imageSelected);
-
           await storage
             .ref(`avatar/${auth.currentUser.uid}`)
             .getDownloadURL()
@@ -102,12 +81,20 @@ const Register = ({role}) => {
               };
               await auth.currentUser.updateProfile(update);
               setLoading(false);
-              navigation.navigate('home');
             })
             .catch(() => {
               toastRef.current.show('Error al actualizar el avatar.');
             });
+
+          await auth.currentUser
+            .sendEmailVerification()
+            .then(
+              toastRef.current.show(
+                'Se ha enviado un email de verificación a tu correo electrónico',
+              ),
+            );
         } catch (error) {
+          setLoading(false);
           const errorCode = error.code;
           toastRef.current.show(errorCode);
         }
@@ -124,13 +111,21 @@ const Register = ({role}) => {
       } else if (response.errorCode) {
         toastRef.current.show('Ha ocurrido un error');
       } else {
-        setImageSelected(response.assets[0].uri);
+        if (response.assets[0].type.split('/')[0] === 'image') {
+          if (response.assets[0].fileSize > 2000000) {
+            toastRef.current.show('La imagen es muy pesada, excede los 2 MB');
+          } else {
+            setImageSelected(response.assets[0].uri);
+          }
+        } else {
+          toastRef.current.show('Formato inválido. Solo se permiten imágenes');
+        }
       }
     });
   };
 
   return (
-    <ScrollView>
+    <View>
       <View style={styles.formContainer}>
         <Icon
           onPress={goToIndex}
@@ -180,9 +175,7 @@ const Register = ({role}) => {
                 }
               />
               {errors.displayName && (
-                <Text style={{fontSize: 10, color: 'red'}}>
-                  {errors.displayName}
-                </Text>
+                <Text style={styles.errorMessage}>{errors.displayName}</Text>
               )}
               <Input
                 name="email"
@@ -201,7 +194,7 @@ const Register = ({role}) => {
                 }
               />
               {errors.email && (
-                <Text style={{fontSize: 10, color: 'red'}}>{errors.email}</Text>
+                <Text style={styles.errorMessage}>{errors.email}</Text>
               )}
               <Input
                 name="password"
@@ -223,9 +216,7 @@ const Register = ({role}) => {
                 }
               />
               {errors.password && (
-                <Text style={{fontSize: 10, color: 'red'}}>
-                  {errors.password}
-                </Text>
+                <Text style={styles.errorMessage}>{errors.password}</Text>
               )}
 
               {role !== 'user' && (
@@ -266,7 +257,7 @@ const Register = ({role}) => {
         <Loading isVisible={loading} text="Creando una cuenta" />
         <Toast ref={toastRef} position="center" opacity={0.9} />
       </View>
-    </ScrollView>
+    </View>
   );
 };
 
@@ -295,6 +286,10 @@ const styles = StyleSheet.create({
   },
   iconRight: {
     color: '#c1c1c1',
+  },
+  errorMessage: {
+    fontSize: 10,
+    color: 'red',
   },
   text: {
     textAlign: 'center',

@@ -1,62 +1,61 @@
 import React, {useCallback, useRef, useState} from 'react';
-import {ActivityIndicator, StyleSheet, Text, View} from 'react-native';
+import {StyleSheet, Text, View} from 'react-native';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
-
 import {Icon} from 'react-native-elements';
-import {db} from '../firebase';
-import ListCampaignsUser from '../components/ListCampaignsUser';
+import {db} from '../../firebase';
+import ListAnimalCampaigns from '../../components/campaigns/ListAnimalCampaigns';
 import Toast from 'react-native-easy-toast';
-import {useAuth} from '../lib/auth';
+import {useAuth} from '../../lib/auth';
 
-const Campaigns = () => {
+const AnimalCareCampaigns = () => {
   const navigation = useNavigation();
   const toastRef = useRef();
   const {user} = useAuth();
   const [animalCampaigns, setAnimalCampaigns] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
   const [totalCampaigns, setTotalCampaigns] = useState(0);
-  const limitCampaigns = 5;
+  const [isLoading, setIsLoading] = useState(false);
+  const [refresh, setRefresh] = useState(false);
+  const limitCampaigns = 20;
 
   useFocusEffect(
     useCallback(() => {
       const resultAnimalCampaigns = [];
+      let total = 0;
 
       db.ref('campaigns').on('value', snapshot => {
-        setTotalCampaigns(snapshot.numChildren());
+        snapshot.forEach(campaign => {
+          if (campaign.val().createdBy === user.uid) {
+            setTotalCampaigns(total + 1);
+          }
+        });
       });
 
-      const getCampaigns = async () => {
-        db.ref('campaigns')
-          .orderByChild('updatedAt')
-          .limitToFirst(limitCampaigns)
-          .on('value', snapshot => {
-            snapshot.forEach(campaign => {
-              const q = campaign.val();
+      db.ref('campaigns')
+        .orderByChild('updatedAt')
+        .limitToLast(limitCampaigns)
+        .on('value', snapshot => {
+          snapshot.forEach(campaign => {
+            const q = campaign.val();
+            if (q.createdBy === user.uid) {
               resultAnimalCampaigns.push(q);
-            });
-            setAnimalCampaigns(resultAnimalCampaigns.reverse());
+              setRefresh(refresh);
+            }
           });
-      };
-      getCampaigns();
-
+          setAnimalCampaigns(resultAnimalCampaigns.reverse());
+        });
       return () => {
         db.ref('campaigns').off();
       };
-    }, []),
+    }, [user.uid, refresh]),
   );
-
-  if (animalCampaigns.length === 0) {
-    return <ActivityIndicator size="large" />;
-  }
 
   const handleLoadMore = async () => {
     const resultCampaigns = [];
-    // setStartNeeds(foundationNeeds[foundationNeeds.length - 1]);
 
     if (animalCampaigns.length <= totalCampaigns) {
       setIsLoading(true);
       await db
-        .ref('foundations')
+        .ref('campaigns')
         .orderByChild('updatedAt')
         .limitToLast(limitCampaigns)
         .endBefore(animalCampaigns[animalCampaigns.length - 1].updatedAt)
@@ -80,39 +79,36 @@ const Campaigns = () => {
 
   return (
     <View style={styles.viewBody}>
-      {/*<Text style={styles.textStyle}>Tenencia responsable de animales</Text>*/}
-      {animalCampaigns?.length === 0 ? (
+      {animalCampaigns.length === 0 ? (
         <Text style={styles.textEmpty}>No existen registros aún</Text>
       ) : (
-        <ListCampaignsUser
+        <ListAnimalCampaigns
           animalCampaigns={animalCampaigns}
           handleLoadMore={handleLoadMore}
           isLoading={isLoading}
           toastRef={toastRef}
+          setRefresh={setRefresh}
         />
       )}
 
-      {user &&
-        (user.role === 'animal_help' || user.role === 'humanitarian_help') && (
-          <Icon
-            reverse
-            type="material-community"
-            name="plus"
-            color="#00a680"
-            containerStyle={styles.btnContainer}
-            onPress={() => navigation.navigate('form_animal_campaign')}
-          />
-        )}
+      <Icon
+        reverse
+        type="material-community"
+        name="plus"
+        color="#00a680"
+        containerStyle={styles.btnContainer}
+        onPress={() => navigation.navigate('form_animal_campaign')}
+      />
       <Toast ref={toastRef} position="center" opacity={0.9} />
     </View>
   );
 };
 
-export default Campaigns;
+export default AnimalCareCampaigns;
 
 const styles = StyleSheet.create({
   textStyle: {
-    fontSize: 20,
+    fontSize: 15,
     fontWeight: 'bold',
     textAlign: 'center',
     color: '#000',

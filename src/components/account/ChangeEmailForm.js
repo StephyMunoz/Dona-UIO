@@ -4,16 +4,11 @@ import {Button, Icon, Input} from 'react-native-elements';
 import {Formik} from 'formik';
 import * as yup from 'yup';
 import {auth} from '../../firebase';
-import {useAuth} from '../../lib/auth';
 import Modal from '../Modal';
 
 export default function ChangeEmailForm({setIsVisible, isVisible}) {
-  const {user} = useAuth();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [userInfo, setUserInfo] = useState(null);
   const [change, setChange] = useState(false);
-  const [showModal, setShowModal] = useState(false);
 
   const schema = yup.object().shape({
     email: yup
@@ -26,7 +21,6 @@ export default function ChangeEmailForm({setIsVisible, isVisible}) {
     try {
       await auth.currentUser.updateEmail(data.email);
       setLoading(false);
-      setShowModal(false);
       setIsVisible(false);
       setChange(true);
       Alert.alert(
@@ -34,8 +28,6 @@ export default function ChangeEmailForm({setIsVisible, isVisible}) {
         'El emal se ha actualizado exitosamente',
       );
     } catch (e) {
-      // setError('Error al actualizar el nombre.');
-      // setIsLoading(false);
       Alert.alert(
         'Ha ocurrido un error',
         'Intenta iniciando sesión nuevamente y vuelve a intentarlo',
@@ -82,7 +74,7 @@ export default function ChangeEmailForm({setIsVisible, isVisible}) {
                 }
               />
               {errors.email && (
-                <Text style={{fontSize: 10, color: 'red'}}>{errors.email}</Text>
+                <Text style={styles.errorMessage}>{errors.email}</Text>
               )}
 
               <Button
@@ -115,5 +107,9 @@ const styles = StyleSheet.create({
   },
   btn: {
     backgroundColor: '#00a680',
+  },
+  errorMessage: {
+    fontSize: 10,
+    color: 'red',
   },
 });

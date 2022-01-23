@@ -8,6 +8,7 @@ import ListFoundationRequirements from '../components/ListFoundationRequirements
 const Home = () => {
   const [foundationNeeds, setFoundationNeeds] = useState([]);
   const [totalNeeds, setTotalNeeds] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const toastRef = useRef();
   const limitNeed = 5;
@@ -30,14 +31,14 @@ const Home = () => {
               resultFoundationNeeds.push(q);
             });
             setFoundationNeeds(resultFoundationNeeds.reverse());
+            setRefreshing(refreshing);
           });
       };
-
       getRequirements();
       return () => {
         db.ref('foundations').off();
       };
-    }, []),
+    }, [refreshing]),
   );
 
   if (foundationNeeds.length === 0) {
@@ -84,6 +85,7 @@ const Home = () => {
           handleLoadMore={handleLoadMore}
           toastRef={toastRef}
           isLoading={isLoading}
+          setRefresh={setRefreshing}
         />
       )}
       <Toast ref={toastRef} position="center" opacity={0.9} />

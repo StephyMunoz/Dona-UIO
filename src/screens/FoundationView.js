@@ -40,9 +40,6 @@ const FoundationView = () => {
         .getDownloadURL()
         .then(async response => {
           setAvatar(response);
-        })
-        .catch(() => {
-          console.log('Error al descargar avatar');
         });
     };
     getPhones();

@@ -4,6 +4,7 @@ import {
   Alert,
   Dimensions,
   FlatList,
+  RefreshControl,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -26,41 +27,62 @@ const ListFoundationRequirements = ({
   isLoading,
   toastRef,
   handleLoadMore,
+  setRefresh,
 }) => {
   const navigation = useNavigation();
+  const [refreshing, setRefreshing] = useState(false);
+
+  const wait = timeout => {
+    return new Promise(resolve => setTimeout(resolve, timeout));
+  };
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    setRefresh(true);
+    wait(2000).then(() => setRefreshing(false));
+  }, [setRefresh]);
 
   return (
     <View>
-      {
-        size(foundationsNeeds) > 0 && (
-          <FlatList
-            data={foundationsNeeds}
-            initialNumToRender={3}
-            renderItem={need => (
-              <FoundationNeed
-                foundationNeed={need}
-                navigation={navigation}
-                toastRef={toastRef}
-              />
-            )}
-            keyExtractor={(item, index) => index.toString()}
-            onEndReachedThreshold={0.5}
-            onEndReached={handleLoadMore}
-            ListFooterComponent={<FooterList isLoading={isLoading} />}
-          />
-        )
-        //   : (
-        //   <View style={styles.loaderHumanitarianNeeds}>
-        //     {/*<ActivityIndicator size="large" />*/}
-        //     <Text>Cargando requerimientos</Text>
-        //   </View>
-        // )
-      }
+      {size(foundationsNeeds) > 0 && (
+        <FlatList
+          data={foundationsNeeds}
+          initialNumToRender={5}
+          refreshControl={
+            <RefreshControl
+              enabled={true}
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+            />
+          }
+          renderItem={need => (
+            <FoundationNeed
+              foundationNeed={need}
+              navigation={navigation}
+              toastRef={toastRef}
+              setRefresh={setRefresh}
+              setRefreshing={setRefreshing}
+              refreshing={refreshing}
+            />
+          )}
+          keyExtractor={(item, index) => index.toString()}
+          onEndReachedThreshold={0.5}
+          onEndReached={handleLoadMore}
+          ListFooterComponent={<FooterList isLoading={isLoading} />}
+        />
+      )}
     </View>
   );
 };
 
-function FoundationNeed({foundationNeed, navigation, toastRef}) {
+function FoundationNeed({
+  foundationNeed,
+  navigation,
+  toastRef,
+  setRefresh,
+  setRefreshing,
+  refreshing,
+}) {
   const [foundationAvatar, setFoundationAvatar] = useState(null);
   const {
     images,
@@ -74,13 +96,12 @@ function FoundationNeed({foundationNeed, navigation, toastRef}) {
     updatedAt,
     createdAt,
   } = foundationNeed.item;
+  const {user} = useAuth();
   const [foundationSelected, setFoundationSelected] = useState(null);
   const [isFavorite, setIsFavorite] = useState(false);
-  const {user} = useAuth();
   const [loading, setLoading] = useState(false);
   const [loadingText, setLoadingText] = useState(null);
   const [reload, setReload] = useState(false);
-  const [deleteKey, setDeleteKey] = useState(null);
 
   useEffect(() => {
     db.ref(`users/${createdBy}`).on('value', snapshot => {
@@ -102,30 +123,25 @@ function FoundationNeed({foundationNeed, navigation, toastRef}) {
   useFocusEffect(
     useCallback(() => {
       if (user) {
-        db.ref('favorites').on('value', snapshot => {
+        db.ref(`users/${user.uid}/favorites`).on('value', snapshot => {
           snapshot.forEach(fav => {
             const q = fav.val();
-            if (q.idFoundation === createdBy) {
-              if (q.idUser === user.uid) {
-                setIsFavorite(true);
-                setReload(reload);
-              }
+            if (q === createdBy) {
+              setIsFavorite(true);
+              setReload(reload);
+              setRefresh(true);
+              setRefreshing(refreshing);
             }
           });
         });
       }
       return () => {
-        db.ref('favorites').off();
+        db.ref('users').off();
       };
-    }, [createdBy, user, reload]),
+    }, [createdBy, user, reload, setRefresh, refreshing, setRefreshing]),
   );
 
-  // if (!foundationSelected) {
-  //   return <ActivityIndicator size="large" />;
-  // }
-
   const handleDelete = () => {
-    handleGetKey();
     Alert.alert(
       'Eliminar publicación',
       '¿Esta seguro que desea eliminar esta publicación?',
@@ -133,61 +149,29 @@ function FoundationNeed({foundationNeed, navigation, toastRef}) {
     );
   };
 
-  const handleGetKey = () => {
-    db.ref('foundations').on('value', snapshot => {
-      snapshot.forEach(need => {
-        if (need.val().id === id) {
-          setDeleteKey(need.key);
-        }
-      });
-    });
-    return () => {
-      db.ref('foundations').off();
-    };
-  };
-
   const handlePublication = () => {
+    setLoading(true);
+    setLoadingText('Eliminando requerimiento');
     db.ref('foundations').on('value', snapshot => {
-      snapshot.forEach(need => {
-        if (need.val().createdBy === createdBy && need.val().id === id) {
-          setDeleteKey(need.key);
+      snapshot.forEach(item => {
+        const q = item.val();
+        if (q.id === id) {
+          db.ref(`foundations/${item.key}`)
+            .remove()
+            .then(() => {
+              setLoading(false);
+              setRefresh(true);
+              toastRef.current.show('Publicación eliminada');
+            })
+            .catch(() => {
+              setLoading(false);
+              toastRef.current.show(
+                'Ha ocurrido un error, por favor intente nuevamente',
+              );
+            });
         }
       });
     });
-
-    if (deleteKey) {
-      setLoadingText('Eliminando publicación');
-      setLoading(true);
-
-      try {
-        db.ref(`foundations/${deleteKey}`)
-          .remove()
-          .then(() => {
-            setLoading(false);
-            toastRef.current.show('Publicación eliminada exitosamente');
-            setIsFavorite(false);
-            return () => {
-              db.ref('favorites').off();
-            };
-          })
-          .catch(() => {
-            setLoading(false);
-            toastRef.current.show(
-              'Ha ocurrido un error, por favor intente nuevamente más tarde',
-            );
-          });
-      } catch (e) {
-        setLoading(false);
-        toastRef.current.show(
-          'Ha ocurrido un error, por favor intente nuevamente más tarde',
-        );
-      }
-    } else {
-      setLoading(false);
-      toastRef.current.show('Ha ocurrido un error, intentalo nuevamente');
-      handleGetKey();
-    }
-
     return () => {
       db.ref('foundations').off();
     };
@@ -208,50 +192,49 @@ function FoundationNeed({foundationNeed, navigation, toastRef}) {
         'Para usar el sistema de favoritos tienes que estar logeado',
       );
     } else if (user && user.role === 'user') {
-      const payload = {
-        idUser: user.uid,
-        idFoundation: foundationNeed.item.createdBy,
-      };
-      db.ref('favorites')
+      db.ref(`users/${user.uid}/favorites`)
         .push()
-        .set(payload)
+        .set(foundationNeed.item.createdBy)
         .then(() => {
           setIsFavorite(true);
+          setReload(true);
           toastRef.current.show('Fundación añadida a favoritos');
         })
         .catch(() => {
           toastRef.current.show('Error al añadir la fundación a favoritos');
         });
     }
-    db.ref('favorites').off();
+    db.ref('users').off();
   };
 
   const removeFavorite = () => {
-    setReload(true);
-    let idRemove = '';
-    db.ref('favorites').on('value', snapshot => {
-      snapshot.forEach(fav => {
-        const idFav = fav.key;
-        const q = fav.val();
-        if (q.idFoundation === createdBy) {
-          if (q.idUser === user.uid) {
-            idRemove = idFav;
+    if (user) {
+      setReload(true);
+      db.ref(`users/${user.uid}/favorites`).on('value', snapshot => {
+        snapshot.forEach(fav => {
+          const q = fav.val();
+          if (q === createdBy) {
+            setIsFavorite(false);
+            db.ref(`users/${user.uid}/favorites/${fav.key}`)
+              .remove()
+              .then(() => {
+                setIsFavorite(false);
+                setReload(true);
+                setRefreshing(true);
+                setRefresh(true);
+                toastRef.current.show('Fundación eliminada de favoritos');
+              })
+              .catch(() => {
+                toastRef.current.show(
+                  'Error al eliminar el restaurante de favoritos',
+                );
+              });
           }
-        }
+        });
       });
-    });
+    }
 
-    db.ref(`favorites/${idRemove}`)
-      .remove()
-      .then(() => {
-        setIsFavorite(false);
-        setReload(true);
-        toastRef.current.show('Fundación eliminada de favoritos');
-      })
-      .catch(() => {
-        toastRef.current.show('Error al eliminar el restaurante de favoritos');
-      });
-    db.ref('favorites').off();
+    db.ref('users').off();
   };
 
   const handleEditPress = () => {
@@ -320,7 +303,7 @@ function FoundationNeed({foundationNeed, navigation, toastRef}) {
           />
         </View>
       )}
-      <View style={{flexDirection: 'row'}}>
+      <View style={styles.avatarView}>
         {foundationAvatar ? (
           <Avatar
             source={{uri: foundationAvatar}}
@@ -347,7 +330,7 @@ function FoundationNeed({foundationNeed, navigation, toastRef}) {
           </TouchableOpacity>
         )}
       </View>
-      <Carousel arrayImages={images} height={250} width={screenWidth} />
+      <Carousel arrayImages={images} height={350} width={screenWidth} />
       <Text style={styles.date}>
         Publicado:{'  '}
         {new Date(updatedAt).getDate()}/{new Date(updatedAt).getMonth() + 1}/
@@ -442,6 +425,9 @@ const styles = StyleSheet.create({
     color: '#000',
     marginBottom: 10,
     fontWeight: 'bold',
+  },
+  avatarView: {
+    flexDirection: 'row',
   },
   viewHumanitarianNeedImage: {
     marginRight: 15,

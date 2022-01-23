@@ -14,7 +14,6 @@ export default function ChangePasswordForm({isVisible, setIsVisible}) {
   const [showPassword2, setShowPassword2] = useState(false);
   const [loading, setLoading] = useState(false);
   const [change, setChange] = useState(false);
-  const [showModal, setShowModal] = useState();
 
   const schema = yup.object().shape({
     password: yup
@@ -44,36 +43,23 @@ export default function ChangePasswordForm({isVisible, setIsVisible}) {
     setLoading(true);
     if (data.newPassword === data.repeatPassword) {
       try {
-        // await user.currentUser.reauthenticateWithCredential(
-        //   user.email,
-        //   data.password,
-        // );
-        try {
-          login(user.email, data.password);
-          console.log('exito');
+        login(user.email, data.password);
 
-          await auth.currentUser.updatePassword(data.newPassword);
-          setLoading(false);
-          setShowModal(false);
-          logout;
-          Alert.alert(
-            'Contraseña actualizada',
-            'Constraseña cambiada con éxito ',
-          );
-        } catch (e) {
-          console.log('e', e);
-          Alert.alert(
-            'Error',
-            'Ha ocurrido un error actualizando tu contraseña, inicie sesión e intente de nuevo',
-          );
-        }
+        await auth.currentUser.updatePassword(data.newPassword);
+        setLoading(false);
+        logout;
+        Alert.alert(
+          'Contraseña actualizada',
+          'Constraseña cambiada con éxito ',
+        );
       } catch (e) {
-        console.log('e', e);
-        console.log('password incorrecta');
+        Alert.alert(
+          'Error',
+          'Ha ocurrido un error actualizando tu contraseña, inicie sesión e intente de nuevo',
+        );
       }
     } else {
       setLoading(false);
-      console.log('error');
     }
   };
   useEffect(() => {

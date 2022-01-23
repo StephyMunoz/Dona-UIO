@@ -50,7 +50,7 @@ const Login = () => {
   };
 
   useEffect(() => {
-    if (!!user) {
+    if (!user) {
       navigation.navigate('home');
     }
   }, [user, navigation]);
@@ -59,11 +59,9 @@ const Login = () => {
     setLoading(true);
     try {
       login(data.email, data.password);
-      // console.log('usuario logeado');
       setLoading(false);
     } catch (e) {
       setLoading(false);
-      console.log('e', e);
     }
   };
 
@@ -138,9 +136,7 @@ const Login = () => {
                 />
               }
             />
-            {errors.email && (
-              <Text style={{fontSize: 10, color: 'red'}}>{errors.email}</Text>
-            )}
+            {errors.email && <Text style={styles.message}>{errors.email}</Text>}
             <Input
               name="password"
               placeholder="Ingresa tu contraseña"
@@ -160,9 +156,7 @@ const Login = () => {
               }
             />
             {errors.password && (
-              <Text style={{fontSize: 10, color: 'red'}}>
-                {errors.password}
-              </Text>
+              <Text style={styles.message}>{errors.password}</Text>
             )}
             <Button
               onPress={handleSubmit}
@@ -209,7 +203,7 @@ const Login = () => {
                 }
               />
               {errors.email && (
-                <Text style={{fontSize: 10, color: 'red'}}>{errors.email}</Text>
+                <Text style={styles.message}>{errors.email}</Text>
               )}
 
               <Button
@@ -240,6 +234,10 @@ const styles = StyleSheet.create({
   inputForm: {
     width: '100%',
     marginTop: 20,
+  },
+  message: {
+    fontSize: 10,
+    color: 'red',
   },
   btnContainerLogin: {
     marginTop: 20,

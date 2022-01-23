@@ -10,9 +10,7 @@ import Modal from '../Modal';
 export default function ChangeDisplayNameForm({isVisible, setIsVisible}) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [userInfo, setUserInfo] = useState(null);
   const [change, setChange] = useState(false);
-  const [showModal, setShowModal] = useState(false);
   const {user} = useAuth();
 
   const schema = yup.object().shape({
@@ -31,17 +29,14 @@ export default function ChangeDisplayNameForm({isVisible, setIsVisible}) {
         // await db.ref(`users/${user.uid}/name`).set(data.name);
         await auth.currentUser.updateProfile(update);
         setLoading(false);
-        setShowModal(false);
         setIsVisible(false);
         Alert.alert('Nombre actualizado', 'Nombre actualizado exitosamente');
-        // await db.ref(`users/${user.uid}/name`).set(data.name);
       } catch (e) {
         setLoading(false);
       }
     } else {
       setLoading(false);
       setError('El nombre debe ser diferente');
-      //mensaje de error
     }
   };
 
@@ -89,9 +84,7 @@ export default function ChangeDisplayNameForm({isVisible, setIsVisible}) {
                   }
                 />
                 {errors.name && (
-                  <Text style={{fontSize: 10, color: 'red'}}>
-                    {errors.name}
-                  </Text>
+                  <Text style={styles.errorMessage}>{errors.name}</Text>
                 )}
 
                 <Button
@@ -125,5 +118,9 @@ const styles = StyleSheet.create({
   },
   btn: {
     backgroundColor: '#00a680',
+  },
+  errorMessage: {
+    fontSize: 10,
+    color: 'red',
   },
 });

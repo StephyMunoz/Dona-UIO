@@ -1,59 +1,62 @@
 import React, {useCallback, useRef, useState} from 'react';
-import {StyleSheet, Text, View} from 'react-native';
+import {ActivityIndicator, StyleSheet, Text, View} from 'react-native';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
-import {Icon} from 'react-native-elements';
-import {db} from '../firebase';
-import ListAnimalCampaigns from '../components/campaigns/ListAnimalCampaigns';
-import Toast from 'react-native-easy-toast';
-import {useAuth} from '../lib/auth';
 
-const AnimalCareCampaigns = () => {
+import {Icon} from 'react-native-elements';
+import {db} from '../../firebase';
+import ListCampaignsUser from '../../components/campaigns_users/ListCampaignsUser';
+import Toast from 'react-native-easy-toast';
+import {useAuth} from '../../lib/auth';
+
+const Campaigns = () => {
   const navigation = useNavigation();
   const toastRef = useRef();
   const {user} = useAuth();
   const [animalCampaigns, setAnimalCampaigns] = useState([]);
-  const [totalCampaigns, setTotalCampaigns] = useState(0);
+  const [refresh, setRefresh] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const limitCampaigns = 20;
+  const [totalCampaigns, setTotalCampaigns] = useState(0);
+  const limitCampaigns = 5;
 
   useFocusEffect(
     useCallback(() => {
       const resultAnimalCampaigns = [];
-      let total = 0;
 
       db.ref('campaigns').on('value', snapshot => {
-        snapshot.forEach(campaign => {
-          if (campaign.val().createdBy === user.uid) {
-            setTotalCampaigns(total + 1);
-          }
-        });
+        setTotalCampaigns(snapshot.numChildren());
       });
 
-      db.ref('campaigns')
-        .orderByChild('updatedAt')
-        .limitToLast(limitCampaigns)
-        .on('value', snapshot => {
-          snapshot.forEach(campaign => {
-            const q = campaign.val();
-            if (q.createdBy === user.uid) {
+      const getCampaigns = async () => {
+        db.ref('campaigns')
+          .orderByChild('updatedAt')
+          .limitToFirst(limitCampaigns)
+          .on('value', snapshot => {
+            snapshot.forEach(campaign => {
+              const q = campaign.val();
               resultAnimalCampaigns.push(q);
-            }
+              setRefresh(refresh);
+            });
+            setAnimalCampaigns(resultAnimalCampaigns.reverse());
           });
-          setAnimalCampaigns(resultAnimalCampaigns.reverse());
-        });
+      };
+      getCampaigns();
+
       return () => {
         db.ref('campaigns').off();
       };
-    }, [user.uid]),
+    }, [refresh]),
   );
+
+  if (animalCampaigns.length === 0) {
+    return <ActivityIndicator size="large" />;
+  }
 
   const handleLoadMore = async () => {
     const resultCampaigns = [];
-
     if (animalCampaigns.length <= totalCampaigns) {
       setIsLoading(true);
       await db
-        .ref('campaigns')
+        .ref('foundations')
         .orderByChild('updatedAt')
         .limitToLast(limitCampaigns)
         .endBefore(animalCampaigns[animalCampaigns.length - 1].updatedAt)
@@ -77,35 +80,39 @@ const AnimalCareCampaigns = () => {
 
   return (
     <View style={styles.viewBody}>
-      {animalCampaigns.length === 0 ? (
+      {animalCampaigns?.length === 0 ? (
         <Text style={styles.textEmpty}>No existen registros aún</Text>
       ) : (
-        <ListAnimalCampaigns
+        <ListCampaignsUser
           animalCampaigns={animalCampaigns}
           handleLoadMore={handleLoadMore}
           isLoading={isLoading}
           toastRef={toastRef}
+          setRefresh={setRefresh}
         />
       )}
 
-      <Icon
-        reverse
-        type="material-community"
-        name="plus"
-        color="#00a680"
-        containerStyle={styles.btnContainer}
-        onPress={() => navigation.navigate('form_animal_campaign')}
-      />
+      {user &&
+        (user.role === 'animal_help' || user.role === 'humanitarian_help') && (
+          <Icon
+            reverse
+            type="material-community"
+            name="plus"
+            color="#00a680"
+            containerStyle={styles.btnContainer}
+            onPress={() => navigation.navigate('form_animal_campaign')}
+          />
+        )}
       <Toast ref={toastRef} position="center" opacity={0.9} />
     </View>
   );
 };
 
-export default AnimalCareCampaigns;
+export default Campaigns;
 
 const styles = StyleSheet.create({
   textStyle: {
-    fontSize: 15,
+    fontSize: 20,
     fontWeight: 'bold',
     textAlign: 'center',
     color: '#000',

@@ -100,9 +100,7 @@ export default function AddLocation({isVisible, setIsVisible, toastRef}) {
                   }}
                 />
                 {errors.location && (
-                  <Text style={{fontSize: 10, color: 'red'}}>
-                    {errors.location}
-                  </Text>
+                  <Text style={styles.errorMessage}>{errors.location}</Text>
                 )}
 
                 <Button
@@ -168,13 +166,7 @@ function Map(props) {
         {location && (
           <MapView
             style={styles.mapStyle}
-            // initialRegion={location}
-            initialRegion={{
-              latitude: -0.2232645,
-              longitude: -78.5182572,
-              latitudeDelta: 0.001,
-              longitudeDelta: 0.001,
-            }}
+            initialRegion={location}
             showsUserLocation={true}
             onRegionChange={region => setLocation(region)}>
             <MapView.Marker
@@ -214,6 +206,10 @@ const styles = StyleSheet.create({
   btnContainer: {
     marginTop: 20,
     width: '95%',
+  },
+  errorMessage: {
+    fontSize: 10,
+    color: 'red',
   },
   btn: {
     backgroundColor: '#00a680',

@@ -3,7 +3,7 @@ import MapView from 'react-native-maps';
 import openMap from 'react-native-open-maps';
 
 export default function Map(props) {
-  const {location, name, height} = props;
+  const {location, height} = props;
 
   const openAppMap = () => {
     openMap({

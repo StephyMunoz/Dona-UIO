@@ -8,11 +8,11 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import {db} from '../firebase';
+import {db} from '../../firebase';
 import {Avatar} from 'react-native-elements';
 import {useFocusEffect} from '@react-navigation/native';
 import Toast from 'react-native-easy-toast';
-import Carousel from '../components/Carousel';
+import Carousel from '../../components/Carousel';
 import {Divider} from 'react-native-elements/dist/divider/Divider';
 
 const screenWidth = Dimensions.get('window').width;
@@ -24,17 +24,17 @@ const PublicationsFoundation = props => {
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const toastRef = useRef();
-  const limitNeed = 5;
+  const limitNeed = 20;
 
   useEffect(() => {
     navigation.setOptions({title: name});
-    let total = 0;
+    let totalPublications = 0;
     const getTotal = async () => {
       await db.ref('foundations').on('value', snapshot => {
         snapshot.forEach(need => {
           const q = need.val();
           if (q.createdBy === id) {
-            setTotal((total = total + 1));
+            setTotal((totalPublications = totalPublications + 1));
           }
         });
       });
@@ -142,7 +142,7 @@ const PublicationsFoundation = props => {
 
 export default PublicationsFoundation;
 
-function Publication({foundation, toastRef, navigation, setIsLoading}) {
+function Publication({foundation}) {
   const {
     images,
     food,

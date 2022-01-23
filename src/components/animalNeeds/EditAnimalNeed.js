@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useRef, useState} from 'react';
 import {
   Alert,
   ScrollView,
@@ -8,69 +8,34 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import {useAuth} from '../lib/auth';
+import {useAuth} from '../../lib/auth';
 import {useNavigation} from '@react-navigation/native';
 import * as yup from 'yup';
 import {filter, map, size} from 'lodash';
-import {db, storage} from '../firebase';
+import {db, storage} from '../../firebase';
 import uuid from 'random-uuid-v4';
 import {launchImageLibrary} from 'react-native-image-picker';
 import {Formik} from 'formik';
 import {Avatar, Button, Icon, Input} from 'react-native-elements';
 import Toast from 'react-native-easy-toast';
-import Loading from './Loading';
+import Loading from '../Loading';
 
-const EditHumanitarianNeed = props => {
-  const {id, images, food, personal_care, other, title, createdAt, createdBy} =
+const EditAnimalNeed = props => {
+  const {id, images, food, medicine, other, title, createdAt, createdBy} =
     props.route.params;
-  const {user} = useAuth();
   const toastRef = useRef();
+  const {user} = useAuth();
   const navigation = useNavigation();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [imagesSelected, setImagesSelected] = useState([...images]);
   const [loadingText, setLoadingText] = useState(false);
-  const [getKey, setGetKey] = useState(null);
-
-  useEffect(() => {
-    const getKeyFunction = async () => {
-      await db.ref('foundations').on('value', snapshot => {
-        snapshot.forEach(needItem => {
-          const q = needItem.val();
-          if (q.id === id) {
-            setGetKey(needItem.key);
-          }
-        });
-      });
-    };
-    getKeyFunction();
-    return () => {
-      db.ref('foundations').off();
-    };
-  }, [id, createdBy]);
-  console.log('props', getKey);
-
-  const getKeyFunction = async () => {
-    if (!getKey) {
-      await db.ref('foundations').on('value', snapshot => {
-        snapshot.forEach(needItem => {
-          const q = needItem.val();
-          if (q.id === id) {
-            setGetKey(needItem.key);
-          }
-        });
-      });
-      return () => {
-        db.ref('foundations').off();
-      };
-    }
-  };
 
   const schema = yup.object().shape({
     title: yup.string().required('Ingrese un título adecuado'),
     food: yup.string(),
     personal_care: yup.string(),
     other: yup.string(),
+    // images: yup.mixed(),
   });
 
   const options = {
@@ -79,104 +44,116 @@ const EditHumanitarianNeed = props => {
       skipBackup: true,
       path: 'images,',
     },
+    quality: 1,
+    maxWidth: 2048,
+    maxHeight: 2048,
   };
 
   const onFinish = async data => {
     if (size(imagesSelected) === 0) {
       setLoading(false);
-      toastRef.current.show('Seleccione una imagen para poder continuar');
+      toastRef.current.show('Seleccione al menos imagen para poder continuar');
     } else {
-      if (getKey) {
+      try {
         setLoading(true);
-        setError(null);
-        try {
-          setLoading(true);
-          setLoadingText('Actualizando información');
-          await uploadImageStorage().then(response => {
-            db.ref(`foundations/${getKey}`)
-              .set({
-                updatedAt: new Date().getTime(),
-                createdAt: createdAt,
-                title: data.title,
-                food: data.food,
-                personal_care: data.personal_care,
-                other: data.other,
-                images: response,
-                createdBy: createdBy,
-                id: id,
-              })
-              .then(() => {
-                setLoading(false);
-                if (user.role === 'administrator') {
-                  navigation.navigate('home');
-                } else {
-                  navigation.navigate('humanitarian_needs');
-                }
-              })
-              .catch(e => {
-                setLoading(false);
-                console.log('e', e);
-                toastRef.current.show(
-                  'Error al subir la información, intentelo más tarde',
-                );
+        setLoadingText('Actualizando información');
+
+        await db.ref('foundations').on('value', snapshot => {
+          snapshot.forEach(needItem => {
+            const q = needItem.val();
+            if (q.id === id) {
+              uploadImageStorage().then(response => {
+                db.ref(`foundations/${needItem.key}`)
+                  .set({
+                    updatedAt: new Date().getTime(),
+                    createdAt: createdAt,
+                    title: data.title,
+                    food: data.food,
+                    medicine: data.medicine,
+                    other: data.other,
+                    images: response,
+                    createdBy: createdBy,
+                    id: id,
+                  })
+                  .then(() => {
+                    setLoading(false);
+                    if (user.role === 'administrator') {
+                      navigation.navigate('home');
+                    } else {
+                      navigation.navigate('animal_needs');
+                    }
+                  })
+                  .catch(() => {
+                    setLoading(false);
+                    toastRef.current.show(
+                      'Error al subir la información, intentelo más tarde',
+                    );
+                  });
               });
+            }
           });
-        } catch (e) {
-          setLoading(false);
-        }
-      } else {
-        toastRef.current.show('Vuelva a intentarlo');
-        await getKeyFunction();
+        });
+      } catch (e) {
+        setLoading(false);
       }
     }
   };
 
   const handleLaunchCamera = async () => {
-    if (!getKey) {
-      await getKeyFunction();
-    }
-
     await launchImageLibrary(options, response => {
       if (response.didCancel) {
-        toastRef.current.show('Selección de imagen cancelada');
+        toastRef.current.show('Selector de imagenes cancelado');
       } else if (response.errorCode) {
-        toastRef.current.show('Ocurrio un error, intente más tarde');
+        toastRef.current.show(
+          'Ha ocurrido un error, intente más tarde. Error',
+          response.errorCode,
+        );
       } else {
-        setImagesSelected([...imagesSelected, response.assets[0].uri]);
+        if (response.assets[0].type.split('/')[0] === 'image') {
+          if (response.assets[0].fileSize > 2000000) {
+            toastRef.current.show('La imagen es muy pesada, excede los 2 MB');
+          } else {
+            if (imagesSelected.includes(response.assets[0].uri)) {
+              toastRef.current.show('Imagen ya ingresada, seleccione otra');
+            } else {
+              setImagesSelected([...imagesSelected, response.assets[0].uri]);
+            }
+          }
+        } else {
+          toastRef.current.show('Formato invalido, solo se permiten imágenes');
+        }
       }
     });
   };
 
   const uploadImageStorage = async () => {
-    const imageBlob = [];
-
+    const imageWithBlob = [];
     await Promise.all(
       map(imagesSelected, async image => {
         const response = await fetch(image);
         const blob = await response.blob();
-        const ref = storage.ref(`humanitarian_needs`).child(uuid());
+        const ref = storage.ref('humanitarian_needs').child(uuid());
         await ref.put(blob).then(async result => {
           await storage
             .ref(`humanitarian_needs/${result.metadata.name}`)
             .getDownloadURL()
             .then(photoUrl => {
-              imageBlob.push(photoUrl);
+              imageWithBlob.push(photoUrl);
             });
         });
       }),
     );
 
-    return imageBlob;
+    return imageWithBlob;
   };
 
   const removeImage = image => {
     Alert.alert(
       'Eliminar Imagen',
-      '¿Estas seguro de que quieres eliminar la imagen seleccionada?',
+      '¿Estas segur@ de que quieres eliminar la imagen seleccionada?',
       [
         {
-          text: 'Cancel',
-          style: 'cancel',
+          text: 'Cancelar',
         },
         {
           text: 'Eliminar',
@@ -199,7 +176,7 @@ const EditHumanitarianNeed = props => {
           initialValues={{
             title: title,
             food: food ? food : '',
-            personal_care: personal_care ? personal_care : '',
+            medicine: medicine ? medicine : '',
             other: other ? other : '',
           }}
           onSubmit={onFinish}>
@@ -220,7 +197,6 @@ const EditHumanitarianNeed = props => {
                 onChangeText={handleChange('title')}
                 onBlur={handleBlur('title')}
                 value={values.title}
-                errorMessage={error}
                 rightIcon={
                   <Icon
                     type="font-awesome"
@@ -230,21 +206,20 @@ const EditHumanitarianNeed = props => {
                 }
               />
               {errors.title && (
-                <Text style={{fontSize: 10, color: 'red'}}>{errors.title}</Text>
+                <Text style={styles.errorMessage}>{errors.title}</Text>
               )}
               <Text style={styles.subtitle}>
-                Alimento que necesita la fundación:{' '}
+                Tipo de alimento balanceado que necesita la fundación:{' '}
               </Text>
               <View style={styles.textInput}>
                 <TextInput
                   name="food"
-                  placeholder="Ingrese información relacionada con el alimento requerido"
+                  placeholder="Ingrese información relacionada con el alimento balanceado"
                   placeholderTextColor="grey"
                   style={styles.textPlaceholder}
                   onChangeText={handleChange('food')}
                   onBlur={handleBlur('food')}
                   value={values.food}
-                  errorMessage={error}
                   editable
                   multiline
                   numberOfLines={3}
@@ -257,32 +232,31 @@ const EditHumanitarianNeed = props => {
                   }
                 />
                 {errors.food && (
-                  <Text style={{fontSize: 10, color: 'red'}}>
-                    {errors.food}
-                  </Text>
+                  <Text style={styles.errorMessage}>{errors.food}</Text>
                 )}
               </View>
               <Text style={styles.subtitle}>
-                Ingrese productos de higiene personal que necesita la fundación:{' '}
+                Ingrese el medicamento que necesita la fundación:{' '}
+              </Text>
+              <Text style={styles.subtitleUnder}>
+                Incluya información relacionada con marcas, genéricos, cantidad,
+                etc., del medicamento requerido
               </Text>
               <View style={styles.textInput}>
                 <TextInput
-                  name="personal_care"
-                  placeholder="Ingrese información relacionada con productos de higiene personal (opcional)"
+                  name="medicine"
+                  placeholder="Ingrese información relacionada al medicamento (opcional)"
                   placeholderTextColor="grey"
                   style={styles.textPlaceholder}
-                  onChangeText={handleChange('personal_care')}
-                  onBlur={handleBlur('personal_care')}
-                  value={values.personal_care}
-                  errorMessage={error}
+                  onChangeText={handleChange('medicine')}
+                  onBlur={handleBlur('medicine')}
+                  value={values.medicine}
                   editable
                   multiline
                   numberOfLines={4}
                 />
-                {errors.personal_care && (
-                  <Text style={{fontSize: 10, color: 'red'}}>
-                    {errors.personal_care}
-                  </Text>
+                {errors.medicine && (
+                  <Text style={styles.errorMessage}>{errors.medicine}</Text>
                 )}
               </View>
               <Text style={styles.subtitle}>Otras necesidades: </Text>
@@ -295,20 +269,15 @@ const EditHumanitarianNeed = props => {
                   onChangeText={handleChange('other')}
                   onBlur={handleBlur('other')}
                   value={values.other}
-                  errorMessage={error}
                   editable
                   multiline
                   numberOfLines={3}
                 />
                 {errors.other && (
-                  <Text style={{fontSize: 10, color: 'red'}}>
-                    {errors.other}
-                  </Text>
+                  <Text style={styles.errorMessage}>{errors.other}</Text>
                 )}
               </View>
-              <Text style={styles.subtitle}>
-                Seleccione una imagen (Máximo 4)
-              </Text>
+              <Text style={styles.subtitle}>Seleccione una imagen</Text>
               <View style={styles.viewImages}>
                 {size(imagesSelected) < 4 && (
                   <TouchableOpacity onPress={handleLaunchCamera}>
@@ -320,20 +289,24 @@ const EditHumanitarianNeed = props => {
                     />
                   </TouchableOpacity>
                 )}
-
-                {map(imagesSelected, (imageHumanitarian, index) => (
+                {size(imagesSelected) === 0 && (
+                  <Text style={styles.errorMessage}>
+                    Seleccione al menos una imagen
+                  </Text>
+                )}
+                {map(imagesSelected, (imageRestaurant, index) => (
                   <Avatar
                     key={index}
                     style={styles.miniatureStyle}
-                    source={{uri: imageHumanitarian}}
-                    onPress={() => removeImage(imageHumanitarian)}
+                    source={{uri: imageRestaurant}}
+                    onPress={() => removeImage(imageRestaurant)}
                   />
                 ))}
               </View>
               <Button
                 onPress={handleSubmit}
                 title="Actualizar requerimiento"
-                // disabled={!isValid}
+                disabled={!isValid}
                 containerStyle={styles.btnContainerLogin}
                 // loading={isLoading}
               />
@@ -347,7 +320,7 @@ const EditHumanitarianNeed = props => {
   );
 };
 
-export default EditHumanitarianNeed;
+export default EditAnimalNeed;
 
 const styles = StyleSheet.create({
   view: {
@@ -355,14 +328,15 @@ const styles = StyleSheet.create({
     paddingBottom: 30,
     margin: 10,
   },
-  textPlaceholder: {
-    color: '#000',
-  },
+
   textStyle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#000',
     textAlign: 'center',
+  },
+  textPlaceholder: {
+    color: '#000',
   },
   subtitle: {
     textAlign: 'left',
@@ -381,6 +355,10 @@ const styles = StyleSheet.create({
   },
   checkBox: {
     backgroundColor: '#f2f2f2',
+  },
+  errorMessage: {
+    fontSize: 10,
+    color: 'red',
   },
   checkOther: {
     textAlign: 'center',

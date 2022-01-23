@@ -1,9 +1,9 @@
 import React from 'react';
 import {createStackNavigator} from '@react-navigation/stack';
 import Home from '../screens/Home';
-import FoundationInformation from '../screens/FoundationInformation';
-import EditAnimalNeed from '../components/EditAnimalNeed';
-import EditHumanitarianNeed from '../components/EditHumanitarianNeed';
+import FoundationInformation from '../screens/Users/FoundationInformation';
+import EditAnimalNeed from '../components/animalNeeds/EditAnimalNeed';
+import EditHumanitarianNeed from '../components/humanitary_needs/EditHumanitarianNeed';
 
 const Stack = createStackNavigator();
 

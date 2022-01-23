@@ -8,33 +8,33 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import {Avatar, Button, Icon, Input} from 'react-native-elements';
-import {Formik} from 'formik';
-import {db, storage} from '../../firebase';
-import * as yup from 'yup';
-import {launchImageLibrary} from 'react-native-image-picker';
-import {filter, map, size} from 'lodash';
 import {useAuth} from '../../lib/auth';
-import Loading from '../Loading';
-import uuid from 'random-uuid-v4';
 import {useNavigation} from '@react-navigation/native';
+import * as yup from 'yup';
+import {filter, map, size} from 'lodash';
+import {db, storage} from '../../firebase';
+import uuid from 'random-uuid-v4';
+import {launchImageLibrary} from 'react-native-image-picker';
+import {Formik} from 'formik';
+import {Avatar, Button, Icon, Input} from 'react-native-elements';
 import Toast from 'react-native-easy-toast';
+import Loading from '../Loading';
 
-const HumanitarianNeedsForm = () => {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [imagesSelected, setImagesSelected] = useState([]);
-  const [loadingText, setLoadingText] = useState(false);
+const EditHumanitarianNeed = props => {
+  const {id, images, food, personal_care, other, title, createdAt, createdBy} =
+    props.route.params;
   const {user} = useAuth();
   const toastRef = useRef();
   const navigation = useNavigation();
+  const [loading, setLoading] = useState(false);
+  const [imagesSelected, setImagesSelected] = useState([...images]);
+  const [loadingText, setLoadingText] = useState(false);
 
   const schema = yup.object().shape({
-    title: yup.string().required('Ingrese un título'),
+    title: yup.string().required('Ingrese un título adecuado'),
     food: yup.string(),
     personal_care: yup.string(),
     other: yup.string(),
-    // images: yup.mixed(),
   });
 
   const options = {
@@ -53,35 +53,43 @@ const HumanitarianNeedsForm = () => {
       setLoading(false);
       toastRef.current.show('Seleccione una imagen para poder continuar');
     } else {
-      setLoading(true);
-      setError(null);
       try {
         setLoading(true);
-        setLoadingText('Guardando información');
-        await uploadImageStorage().then(response => {
-          db.ref('foundations')
-            .push()
-            .set({
-              createdAt: new Date().getTime(),
-              updatedAt: new Date().getTime(),
-              title: data.title,
-              food: data.food,
-              personal_care: data.personal_care,
-              other: data.other,
-              images: response,
-              createdBy: user.uid,
-              id: uuid(),
-            })
-            .then(() => {
-              setLoading(false);
-              navigation.navigate('humanitarian_needs');
-            })
-            .catch(() => {
-              setLoading(false);
-              toastRef.current.show(
-                'Error al subir la información, intentelo más tarde',
-              );
-            });
+        setLoadingText('Actualizando información');
+        await db.ref('foundations').on('value', snapshot => {
+          snapshot.forEach(needItem => {
+            const q = needItem.val();
+            if (q.id === id) {
+              uploadImageStorage().then(response => {
+                db.ref(`foundations/${needItem.key}`)
+                  .set({
+                    updatedAt: new Date().getTime(),
+                    createdAt: createdAt,
+                    title: data.title,
+                    food: data.food,
+                    personal_care: data.personal_care,
+                    other: data.other,
+                    images: response,
+                    createdBy: createdBy,
+                    id: id,
+                  })
+                  .then(() => {
+                    setLoading(false);
+                    if (user.role === 'administrator') {
+                      navigation.navigate('home');
+                    } else {
+                      navigation.navigate('humanitarian_needs');
+                    }
+                  })
+                  .catch(() => {
+                    setLoading(false);
+                    toastRef.current.show(
+                      'Error al subir la información, intentelo más tarde',
+                    );
+                  });
+              });
+            }
+          });
         });
       } catch (e) {
         setLoading(false);
@@ -92,13 +100,16 @@ const HumanitarianNeedsForm = () => {
   const handleLaunchCamera = async () => {
     await launchImageLibrary(options, response => {
       if (response.didCancel) {
-        toastRef.current.show('Selección de imagen cancelada');
+        toastRef.current.show('Seleccion de imagen cancelada');
       } else if (response.errorCode) {
-        toastRef.current.show('Ha ocurrido un error ', response.errorCode);
+        toastRef.current.show(
+          'Ha ocurrido un error vuelva a intentalo más tarde: ',
+          response.errorCode,
+        );
       } else {
         if (response.assets[0].type.split('/')[0] === 'image') {
           if (response.assets[0].fileSize > 2000000) {
-            toastRef.current.show('La imagen es muy pesada, excede los 2 MB');
+            toastRef.current.show('La imagen excede los 2 MB');
           } else {
             if (imagesSelected.includes(response.assets[0].uri)) {
               toastRef.current.show('Imagen ya ingresada, seleccione otra');
@@ -107,7 +118,7 @@ const HumanitarianNeedsForm = () => {
             }
           }
         } else {
-          toastRef.current.show('Formato invalido, solo se permiten imágenes');
+          toastRef.current.show('Solo se permiten imagenes');
         }
       }
     });
@@ -163,14 +174,15 @@ const HumanitarianNeedsForm = () => {
         <Formik
           validationSchema={schema}
           initialValues={{
-            title: '',
-            food: '',
-            personal_care: '',
-            other: '',
+            title: title,
+            food: food ? food : '',
+            personal_care: personal_care ? personal_care : '',
+            other: other ? other : '',
           }}
           onSubmit={onFinish}>
           {({handleChange, handleBlur, handleSubmit, values, errors}) => (
             <>
+              <Text style={styles.textStyle}>Registro de necesidades: </Text>
               <Input
                 name="title"
                 placeholder="Ingresa un título adecuado"
@@ -178,7 +190,6 @@ const HumanitarianNeedsForm = () => {
                 onChangeText={handleChange('title')}
                 onBlur={handleBlur('title')}
                 value={values.title}
-                errorMessage={error}
                 rightIcon={
                   <Icon
                     type="font-awesome"
@@ -188,21 +199,20 @@ const HumanitarianNeedsForm = () => {
                 }
               />
               {errors.title && (
-                <Text style={styles.errormessage}>{errors.title}</Text>
+                <Text style={styles.errorMessage}>{errors.title}</Text>
               )}
               <Text style={styles.subtitle}>
                 Alimento que necesita la fundación:{' '}
               </Text>
               <View style={styles.textInput}>
                 <TextInput
-                  style={styles.textPlaceholder}
                   name="food"
                   placeholder="Ingrese información relacionada con el alimento requerido"
-                  placeholderTextColor="#c1c1c1"
+                  placeholderTextColor="grey"
+                  style={styles.textPlaceholder}
                   onChangeText={handleChange('food')}
                   onBlur={handleBlur('food')}
                   value={values.food}
-                  errorMessage={error}
                   editable
                   multiline
                   numberOfLines={3}
@@ -215,7 +225,7 @@ const HumanitarianNeedsForm = () => {
                   }
                 />
                 {errors.food && (
-                  <Text style={styles.errormessage}>{errors.food}</Text>
+                  <Text style={styles.errorMessage}>{errors.food}</Text>
                 )}
               </View>
               <Text style={styles.subtitle}>
@@ -224,19 +234,18 @@ const HumanitarianNeedsForm = () => {
               <View style={styles.textInput}>
                 <TextInput
                   name="personal_care"
-                  style={styles.textPlaceholder}
                   placeholder="Ingrese información relacionada con productos de higiene personal (opcional)"
-                  placeholderTextColor="#c1c1c1"
+                  placeholderTextColor="grey"
+                  style={styles.textPlaceholder}
                   onChangeText={handleChange('personal_care')}
                   onBlur={handleBlur('personal_care')}
                   value={values.personal_care}
-                  errorMessage={error}
                   editable
                   multiline
                   numberOfLines={4}
                 />
                 {errors.personal_care && (
-                  <Text style={styles.errormessage}>
+                  <Text style={styles.errorMessage}>
                     {errors.personal_care}
                   </Text>
                 )}
@@ -246,18 +255,17 @@ const HumanitarianNeedsForm = () => {
                 <TextInput
                   name="other"
                   placeholder="En este apartado puede incluir otras necesidades de la fundación (opcional)"
-                  onChangeText={handleChange('other')}
-                  placeholderTextColor="#c1c1c1"
+                  placeholderTextColor="grey"
                   style={styles.textPlaceholder}
+                  onChangeText={handleChange('other')}
                   onBlur={handleBlur('other')}
                   value={values.other}
-                  errorMessage={error}
                   editable
                   multiline
                   numberOfLines={3}
                 />
                 {errors.other && (
-                  <Text style={styles.errormessage}>{errors.other}</Text>
+                  <Text style={styles.errorMessage}>{errors.other}</Text>
                 )}
               </View>
               <Text style={styles.subtitle}>
@@ -271,15 +279,11 @@ const HumanitarianNeedsForm = () => {
                       name="camera"
                       color="#7a7a7a"
                       containerStyle={styles.containerIcon}
-                      size={40}
+                      size={35}
                     />
                   </TouchableOpacity>
                 )}
-                {size(imagesSelected) === 0 && (
-                  <Text style={styles.errormessage}>
-                    Seleccione al menos una imagen
-                  </Text>
-                )}
+
                 {map(imagesSelected, (imageHumanitarian, index) => (
                   <Avatar
                     key={index}
@@ -291,7 +295,7 @@ const HumanitarianNeedsForm = () => {
               </View>
               <Button
                 onPress={handleSubmit}
-                title="Ingresar requerimiento"
+                title="Actualizar requerimiento"
                 // disabled={!isValid}
                 containerStyle={styles.btnContainerLogin}
                 // loading={isLoading}
@@ -306,13 +310,20 @@ const HumanitarianNeedsForm = () => {
   );
 };
 
-export default HumanitarianNeedsForm;
+export default EditHumanitarianNeed;
 
 const styles = StyleSheet.create({
   view: {
     paddingTop: 10,
     paddingBottom: 30,
     margin: 10,
+  },
+  textPlaceholder: {
+    color: '#000',
+  },
+  errorMessage: {
+    fontSize: 10,
+    color: 'red',
   },
   textStyle: {
     fontSize: 18,
@@ -329,19 +340,17 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     borderColor: '#c2c2c2',
   },
-  errormessage: {
-    fontSize: 10,
-    color: 'red',
-  },
-  textPlaceholder: {
-    color: '#000',
-  },
   textInput: {
     borderBottomColor: '#c2c2c2',
     borderBottomWidth: 1,
     borderTopColor: '#c2c2c2',
     marginBottom: 10,
-    color: '#c2c2c2',
+  },
+  checkBox: {
+    backgroundColor: '#f2f2f2',
+  },
+  checkOther: {
+    textAlign: 'center',
   },
   imageButton: {
     textAlign: 'center',

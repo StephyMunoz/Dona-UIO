@@ -40,7 +40,7 @@ const ProfileOptions = () => {
 
   if (user && user.emailVerified === false) {
     Alert.alert(
-      'Cuenta no verificada',
+      'Correo de verificación enviado',
       'Revisa tu badeja de Correo No Deseado o dirígete a Perfil para reenviar el link de activación. No podrás acceder a las funcionalidades completas',
       [{text: 'Entendido'}],
     );
@@ -52,25 +52,33 @@ const ProfileOptions = () => {
       skipBackup: true,
       path: 'images',
     },
+    quality: 1,
+    maxWidth: 2048,
+    maxHeight: 2048,
   };
 
   const changeAvatar = async () => {
-    setLoading(true);
     await launchImageLibrary(options, response => {
       if (response.didCancel) {
-        console.log('Seleccion de imagen cancelada');
+        toastRef.current.show('Seleccion de imagen cancelada');
       } else if (response.errorCode) {
-        console.log('Error: ', response.errorCode);
+        toastRef.current.show('Ha ocurrido un error ', response.errorCode);
       } else {
-        console.log('response', response.assets[0].uri);
-        uploadImage(response.assets[0].uri)
-          .then(() => {
-            updatePhotoUrl();
-          })
-          .catch(() => {
-            // toastRef.current.show('Error al actualizar el avatar.');
-            console.log('Error al actualizar el avatar');
-          });
+        if (response.assets[0].type.split('/')[0] === 'image') {
+          if (response.assets[0].fileSize > 2000000) {
+            toastRef.current.show('La imagen es muy pesada, excede los 2 MB');
+          } else {
+            uploadImage(response.assets[0].uri)
+              .then(() => {
+                updatePhotoUrl();
+              })
+              .catch(() => {
+                toastRef.current.show('Error al actualizar el avatar.');
+              });
+          }
+        } else {
+          toastRef.current.show('Solo se permiten imagenes');
+        }
       }
     });
   };
@@ -96,8 +104,7 @@ const ProfileOptions = () => {
         setLoading(false);
       })
       .catch(() => {
-        // toastRef.current.show('Error al actualizar el avatar.');
-        console.log('Error al actualizar el avatar');
+        toastRef.current.show('Error al actualizar el avatar.');
       });
   };
 

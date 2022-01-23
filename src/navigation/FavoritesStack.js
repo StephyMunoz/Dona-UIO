@@ -1,8 +1,8 @@
 import React from 'react';
 import {createStackNavigator} from '@react-navigation/stack';
-import FoundationInformation from '../screens/FoundationInformation';
-import Favorites from '../screens/Favorites';
-import PublicationsFoundation from '../screens/PublicationsFoundation';
+import FoundationInformation from '../screens/Users/FoundationInformation';
+import Favorites from '../screens/Users/Favorites';
+import PublicationsFoundation from '../screens/Users/PublicationsFoundation';
 
 const Stack = createStackNavigator();
 

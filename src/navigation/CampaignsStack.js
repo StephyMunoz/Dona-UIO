@@ -1,9 +1,8 @@
 import React from 'react';
 import {createStackNavigator} from '@react-navigation/stack';
-import Campaigns from '../screens/Campaigns';
-import CampaignScreen from '../screens/CampaignScreen';
-import FoundationInformation from '../screens/FoundationInformation';
-import EditCampaign from '../components/EditCampaign';
+import Campaigns from '../screens/CampaignsUsers/Campaigns';
+import FoundationInformation from '../screens/Users/FoundationInformation';
+import EditCampaign from '../components/campaigns/EditCampaign';
 
 const Stack = createStackNavigator();
 
@@ -15,7 +14,6 @@ export default function AnimalNeedsStack() {
         component={Campaigns}
         options={{title: 'Campañas registradas'}}
       />
-      <Stack.Screen name="campaign_screen" component={CampaignScreen} />
       <Stack.Screen
         name="foundation_screen"
         component={FoundationInformation}

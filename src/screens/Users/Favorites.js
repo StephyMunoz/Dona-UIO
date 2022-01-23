@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -10,10 +10,11 @@ import {
 } from 'react-native';
 import {Icon, Image} from 'react-native-elements';
 import Toast from 'react-native-easy-toast';
-import Loading from '../components/Loading';
-import {useAuth} from '../lib/auth';
-import {db, storage} from '../firebase';
-import imageNotFound from '../images/no-image.png';
+import Loading from '../../components/Loading';
+import {useAuth} from '../../lib/auth';
+import {db, storage} from '../../firebase';
+import imageNotFound from '../../images/no-image.png';
+import {useFocusEffect} from '@react-navigation/native';
 
 const Favorites = props => {
   const {navigation} = props;
@@ -23,41 +24,22 @@ const Favorites = props => {
   const [reloadData, setReloadData] = useState(false);
   const toastRef = useRef();
 
-  useEffect(() => {
-    const listFoundations = [];
-    db.ref('favorites').on('value', snapshot => {
-      snapshot.forEach(foundation => {
-        const q = foundation.val();
-        if (q.idUser === user.uid) {
-          listFoundations.push(q.idFoundation);
-        }
-      });
-    });
-
-    console.log('hh', listFoundations);
-
-    getFavorites(listFoundations).then(response => {
-      const foundationFavorite = [];
-      response.forEach(foundation => {
-        db.ref(`users/${foundation.uid}`).on('value', snapshot => {
-          foundationFavorite.push(snapshot.val());
+  useFocusEffect(
+    useCallback(() => {
+      const listFoundations = [];
+      db.ref(`users/${user.uid}/favorites`).on('value', snapshot => {
+        snapshot.forEach(fav => {
+          const q = fav.val();
+          listFoundations.push(q);
           setReloadData(reloadData);
         });
+        setFoundations(listFoundations.reverse());
       });
-      setFoundations(foundationFavorite);
-    });
-    setReloadData(false);
-  }, [user.uid, reloadData]);
-
-  const getFavorites = idFoundations => {
-    const arrayFoundations = [];
-    idFoundations.forEach(id => {
-      db.ref(`users/${id}`).on('value', snapshot => {
-        arrayFoundations.push(snapshot.val());
-      });
-    });
-    return Promise.all(arrayFoundations);
-  };
+      return () => {
+        db.ref(`users/${user.uid}/favorites`).off();
+      };
+    }, [user.uid, reloadData]),
+  );
 
   if (!foundations) {
     return <ActivityIndicator size="large" />;
@@ -84,7 +66,7 @@ const Favorites = props => {
       ) : (
         <View style={styles.loaderFoundations}>
           <ActivityIndicator size="large" />
-          <Text style={{textAlign: 'center'}}>Cargando Foundaciones</Text>
+          <Text style={styles.loading}>Cargando Foundaciones</Text>
         </View>
       )}
       <Toast ref={toastRef} position="center" opacity={0.9} />
@@ -97,9 +79,9 @@ export default Favorites;
 
 function NotFoundFoundations() {
   return (
-    <View style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}>
+    <View style={styles.noFoundation}>
       <Icon type="material-community" name="alert-outline" size={50} />
-      <Text style={{fontSize: 20, fontWeight: 'bold'}}>
+      <Text style={styles.textNotFound}>
         No tiene fundaciones en la lista de favoritos
       </Text>
     </View>
@@ -107,24 +89,30 @@ function NotFoundFoundations() {
 }
 
 function Foundation(props) {
-  const {foundation, setIsLoading, toastRef, setReloadData, navigation} = props;
-  const {uid, displayName, email} = foundation.item;
   const {user} = useAuth();
+  const {foundation, setIsLoading, toastRef, setReloadData, navigation} = props;
+  const [foundationSelected, setFoundationSelected] = useState(null);
   const [image, setImage] = useState(null);
+
+  useEffect(() => {
+    db.ref(`users/${foundation.item}`).on('value', snapshot => {
+      setFoundationSelected(snapshot.val());
+    });
+  }, [foundation.item]);
 
   useEffect(() => {
     storage
       .ref()
-      .child(`avatar/${foundation.item.uid}`)
+      .child(`avatar/${foundation.item}`)
       .getDownloadURL()
       .then(async response => {
         setImage(response);
       });
 
     return () => {
-      db.ref(`avatar/${foundation.item.uid}`).off();
+      db.ref(`avatar/${foundation.item}`).off();
     };
-  }, [foundation.item.uid]);
+  }, [foundation.item]);
 
   const confirmRemoveFavorite = () => {
     Alert.alert(
@@ -145,40 +133,38 @@ function Foundation(props) {
   };
 
   const removeFavorite = () => {
-    let idToRemove = '';
-    setIsLoading(true);
-    db.ref('favorites').on('value', snapshot => {
+    db.ref(`users/${user.uid}/favorites`).on('value', snapshot => {
       snapshot.forEach(fav => {
         const q = fav.val();
-        if (q.idFoundation === uid) {
-          if (q.idUser === user.uid) {
-            idToRemove = fav.key;
-          }
+        if (q === foundationSelected.uid) {
+          db.ref(`users/${user.uid}/favorites/${fav.key}`)
+            .remove()
+            .then(() => {
+              setIsLoading(false);
+              setReloadData(true);
+              toastRef.current.show('Foundación eliminado correctamente');
+            })
+            .catch(() => {
+              setIsLoading(false);
+              toastRef.current.show('Error al eliminar el Foundatione');
+            });
         }
       });
     });
 
-    db.ref(`favorites/${idToRemove}`)
-      .remove()
-      .then(() => {
-        setIsLoading(false);
-        setReloadData(true);
-        toastRef.current.show('Foundación eliminado correctamente');
-      })
-      .catch(() => {
-        setIsLoading(false);
-        toastRef.current.show('Error al eliminar el Foundatione');
-      });
-
-    db.ref('favorites').off();
+    db.ref(`users/${user.uid}/favorites`).off();
   };
+
+  if (!foundationSelected) {
+    return <ActivityIndicator size="large" />;
+  }
 
   const goToFoundationScreen = () => {
     navigation.navigate('publications', {
-      name: displayName,
+      name: foundationSelected.displayName,
       image,
-      id: uid,
-      email,
+      id: foundationSelected.uid,
+      email: foundationSelected.email,
     });
   };
 
@@ -186,13 +172,15 @@ function Foundation(props) {
     <View style={styles.Foundation}>
       <TouchableOpacity onPress={goToFoundationScreen}>
         <Image
-          resizeMode="cover"
+          resizeMode="contain"
           style={styles.image}
           PlaceholderContent={<ActivityIndicator color="#fff" />}
           source={image ? {uri: image} : imageNotFound}
         />
         <View style={styles.info}>
-          <Text style={styles.name}>{displayName}</Text>
+          {foundationSelected && (
+            <Text style={styles.name}>{foundationSelected.displayName}</Text>
+          )}
           <Icon
             type="material-community"
             name="heart"
@@ -217,12 +205,20 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 10,
   },
+  loading: {
+    textAlign: 'center',
+  },
   Foundation: {
     margin: 10,
   },
   image: {
     width: '100%',
     height: 180,
+  },
+  noFoundation: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   info: {
     flex: 1,
@@ -234,6 +230,10 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     marginTop: -30,
     backgroundColor: '#fff',
+  },
+  textNotFound: {
+    fontSize: 20,
+    fontWeight: 'bold',
   },
   name: {
     fontWeight: 'bold',
