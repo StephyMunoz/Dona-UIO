@@ -56,7 +56,7 @@ const Campaigns = () => {
     if (animalCampaigns.length <= totalCampaigns) {
       setIsLoading(true);
       await db
-        .ref('foundations')
+        .ref('campaigns')
         .orderByChild('updatedAt')
         .limitToLast(limitCampaigns)
         .endBefore(animalCampaigns[animalCampaigns.length - 1].updatedAt)

@@ -156,7 +156,7 @@ function Map(props) {
 
   const confirmLocation = () => {
     setLocationFoundation(location);
-    toastRef.current.show('Localizacion guardada correctamente');
+    toastRef.current.show('Localización guardada correctamente');
     setIsVisibleMap(false);
   };
 

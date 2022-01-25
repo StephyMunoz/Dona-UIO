@@ -20,19 +20,16 @@ const Tab = createBottomTabNavigator();
 
 const Navigation = () => {
   const {user} = useAuth();
-  // console.log('verifie', user.emailVerified);
   return (
     <NavigationContainer>
       {!user && (
         <Tab.Navigator
           initialRouteName="home"
-          tabBarOptions={{
-            inactiveTintColor: '#646464',
-            activeTintColor: '#00a680',
-          }}
           screenOptions={({route}) => ({
             tabBarIcon: ({color}) => screenOptions(route, color),
             headerShown: false,
+            tabBarInactiveTintColor: '#646464',
+            tabBarActiveTintColor: '#00a680',
           })}>
           <Tab.Screen
             name="foundations_needs"

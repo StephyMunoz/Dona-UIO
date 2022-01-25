@@ -7,8 +7,8 @@ export default function Map(props) {
 
   const openAppMap = () => {
     openMap({
-      latitude: location.latitude,
-      longitude: location.longitude,
+      latitude: location.latitude && location.latitude,
+      longitude: location.longitude && location.longitude,
       zoom: 19,
     });
   };

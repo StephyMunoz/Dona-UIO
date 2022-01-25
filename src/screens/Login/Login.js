@@ -49,12 +49,6 @@ const Login = () => {
     navigation.navigate('selectRole');
   };
 
-  useEffect(() => {
-    if (!user) {
-      navigation.navigate('home');
-    }
-  }, [user, navigation]);
-
   const onFinishLog = data => {
     setLoading(true);
     try {

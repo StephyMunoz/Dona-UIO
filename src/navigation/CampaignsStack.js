@@ -12,7 +12,7 @@ export default function AnimalNeedsStack() {
       <Stack.Screen
         name="campaigns_page"
         component={Campaigns}
-        options={{title: 'Campañas registradas'}}
+        options={{title: 'Campañas'}}
       />
       <Stack.Screen
         name="foundation_screen"

@@ -37,7 +37,9 @@ const SelectRole = () => {
             Selecciona el tipo de cuenta que deseas crear...
           </Text>
           <Text style={styles.textLogin}>¿Ya tienes una cuenta?</Text>
-          <TouchableOpacity onPress={loginScreen} style={styles.loginButton}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('login')}
+            style={styles.loginButton}>
             <Text style={styles.loginText}>Inicia sesión</Text>
           </TouchableOpacity>
           <View style={styles.helpAccount}>

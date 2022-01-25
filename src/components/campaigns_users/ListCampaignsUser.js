@@ -374,11 +374,11 @@ const styles = StyleSheet.create({
   },
   iconTrash: {
     position: 'absolute',
-    right: 10,
+    right: 25,
   },
   iconEdit: {
     position: 'absolute',
-    right: 50,
+    right: 55,
   },
   imageAnimalCampaign: {
     width: 200,
