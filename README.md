@@ -25,7 +25,7 @@ A continuación como es la primera vez que se genera la firma se presiona Create
 
 Se escoge la ruta en donde se guardarán las claves, el alias y la contraseña.
 
-![image](https://user-images.githubusercontent.com/58042439/151455315-266d3c16-12a2-4581-a8a2-aa4f9994edfe.png)
+![Screenshot 2022-01-26 175835](https://user-images.githubusercontent.com/58042439/151455498-0b9ee5a5-ab7b-4c17-84c1-5d877ee5e7ab.png)
 
 Una vez completado esto se regresa a la página anterior y se llenan los demás campos.
 
