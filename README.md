@@ -61,4 +61,14 @@ Se debe esperar que el equipo de Google Play Console aprueben la aplicación par
 
 ![image](https://user-images.githubusercontent.com/58042439/151456537-b8754a29-ffc9-48ed-89a1-05e624566140.png)
 
-Finalmente, la aplicación se encuentra disponible en la tienda.
+Finalmente, la aplicación una vez revisada es lanzada a producción.
+
+![image](https://user-images.githubusercontent.com/58042439/152364031-a69f64c2-6c37-4b74-902f-033e57b9b938.png)
+
+La aplicación se encuentra disponible en la tienda oficial de Google, Play Store.
+
+![image](https://user-images.githubusercontent.com/58042439/152364238-94226945-2f51-4704-ae9a-baca9bfe54f6.png)
+
+Se encuentra disponible en el siguiente enlace:
+
+https://play.google.com/store/apps/details?id=com.newdonauio
